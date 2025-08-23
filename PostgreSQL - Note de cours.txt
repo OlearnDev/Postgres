@@ -1,0 +1,366 @@
+------------- PostgreSQL -----------------------
+
+https://www.youtube.com/watch?v=Tn67kCaLElk&list=PLwxrtuGg5dNGv4jvDY3TEddn2HIn4-uF9
+
+https://www.youtube.com/watch?v=LA17bOvN-yg&list=PLwxrtuGg5dNGv4jvDY3TEddn2HIn4-uF9&index=2
+
+Installation Directory: C:\Program Files\PostgreSQL\17
+Server Installation Directory: C:\Program Files\PostgreSQL\17
+Data Directory: C:\Program Files\PostgreSQL\17\data
+Database Port: 5432
+Database Superuser: postgres
+Operating System Account: NT AUTHORITY\NetworkService
+Database Service: postgresql-x64-17
+Command Line Tools Installation Directory: C:\Program Files\PostgreSQL\17
+pgAdmin4 Installation Directory: C:\Program Files\PostgreSQL\17\pgAdmin 4
+Stack Builder Installation Directory: C:\Program Files\PostgreSQL\17
+Installation Log: C:\Users\oline\AppData\Local\Temp\install-postgresql.log
+
+user postgres/postgres
+
+
+
+------------- Step 1 : Installing PostgreSQL on Linux
+
+You can see installation steps on postgresql site : https://www.postgresql.org/download/linux/redhat/
+
+Summary below :
+
+	yum install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86 64/pgdg-redhat-repo-latest.noarch.rpm
+	yum install postgresql12			-- client
+	yum install postgresql12-server
+	/usr/pgsql-12/bin/postgresql-12-setup initdb	-- Initialize the db
+	systemctl enable postgresql-12					-- Allow postgresql start when system restarts
+	systemctl start postgresql-12
+	systemctl status postgresql-12
+
+------------- Step 2 :  USING POSTGRESQL ROLE
+
+The installation procedure created a user account called postgres that is associated with the default Postgres role.
+
+SWITCH to POSTGRES ACCOUNT
+#sudo iu postgres
+
+You can now access a Postgres prompt by typing below command:
+
+$psql
+postgres# \du 	: displays all roles available
+postgres# \q	: to exit psql
+
+------------- Step 3 : CREATING A NEW NON DEFAULT ROLE.
+
+You have the postgres role configured within the database.
+You can create new roles from the command line with the createrole command. 
+The-interactive flag will prompt you for the name of the new role and also ask whether it should have superuser permissions.
+
+If you are logged in as the postgres account. createuser-interactive :
+$sudo -u postgres createuser --interactive
+
+
+---------- MANAGING TABLESPACES --------------------------------
+
+pg_default :tablespace stores all user data.
+pg_global : tablespace stores all global data (dictionnaire)
+
+---------- DEFAULT STORAGE IN POSTGTRESQL
+
+pg_ctl -D data initdb
+Is -IF data
+pg_ctl -D data start
+
+When you initialize postgre, the Postgres server creates the required files in $PGDATA directory 
+
+The Default Tablespaces
+
+Two tablespaces are automatically created when the database cluster is initialized.
+
+pg_global  : tablespace is used for shared system catalogs.
+pg_default : tablespace is the default tablespace for users and also for templatel and template0 databases
+
+--- Creating a new tbs
+
+postgres# create tablespace tbs1 location '/postgres/data/tbs1';
+postgres# \db+
+Is -l data/pg_tblspc/
+
+Creating Objects :
+
+create database dbl tablespace tbs1;
+\c dbl					-- Switch to db : db1
+
+create table tabl (a int);
+create table tab2 (a int) tablespace tbs2;
+create table tab3 (a int) tablespace pg_default;
+
+---- Demo 
+
+Initialize an instance :
+
+$ sudo su - postgres
+$ mkdir -p /postgres/data/instancel
+$ pg_ctl -D /postgres/data/instancel initdb
+
+Start the database server using :
+
+$ pg_ctl -D /postgres/data/instancel
+or 
+$ pg_ctl -D /postgres/data/instancel -l logfile start
+
+$ pg_ctl -D data initdb
+Is -lF data
+pg_ctl -D data start
+
+ \db+
+    Name    |  Owner   |          Location           | Access privileges | Options |  Size   | Description
+------------+----------+-----------------------------+-------------------+---------+---------+-------------
+ pg_default | postgres |                             |                   |         | 22 MB   |
+ pg_global  | postgres |                             |                   |         | 565 kB  |
+ 
+postgres@OlivierLP:~/16/data$ pwd
+/var/lib/postgresql/16/data
+postgres@OlivierLP:~/16/data$ psql
+psql (16.4 (Ubuntu 16.4-0ubuntu0.24.04.2))
+Type "help" for help.
+
+postgres=# create tablespace tbs1 location '/var/lib/postgresql/16/data';
+CREATE TABLESPACE
+
+postgres=# \db+
+                                            List of tablespaces
+    Name    |  Owner   |          Location           | Access privileges | Options |  Size   | Description
+------------+----------+-----------------------------+-------------------+---------+---------+-------------
+ pg_default | postgres |                             |                   |         | 22 MB   |
+ pg_global  | postgres |                             |                   |         | 565 kB  |
+ tbs1       | postgres | /var/lib/postgresql/16/data |                   |         | 0 bytes |
+(3 rows)
+
+postgres=# exit
+postgres@OlivierLP:~/16/data$ ls -ltrh
+total 4.0K
+drwx------ 2 postgres postgres 4.0K Nov  8 22:33 PG_16_202307071
+postgres@OlivierLP:~/16/data$
+
+***** pg_tblspc : folder in $PGDATA where you have symbolic links to tablespaces folders associated with tablespaces 
+
+postgres@OlivierLP:~/16/main$ ls
+PG_VERSION  pg_commit_ts  pg_multixact  pg_serial     pg_stat_tmp  pg_twophase  postgresql.auto.conf
+base        pg_dynshmem   pg_notify     pg_snapshots  pg_subtrans  pg_wal       postmaster.opts
+global      pg_logical    pg_replslot   pg_stat       pg_tblspc    pg_xact      postmaster.pid
+postgres@OlivierLP:~/16/main$ cd pg_tblspc
+postgres@OlivierLP:~/16/main/pg_tblspc$
+postgres@OlivierLP:~/16/main/pg_tblspc$ ls -ltrh
+total 0
+lrwxrwxrwx 1 postgres postgres 27 Nov  8 22:33 16390 -> /var/lib/postgresql/16/data
+
+NB : l'id pour le nouveau tbs est : 16390
+
+***** Create database with default tbs :
+
+postgres=# create database db1 tablespace tbs1;
+postgres=# \l
+                                                   List of databases
+   Name    |  Owner   | Encoding | Locale Provider | Collate |  Ctype  | ICU Locale | ICU Rules |   Access privileges
+-----------+----------+----------+-----------------+---------+---------+------------+-----------+-----------------------
+ db1       | postgres | UTF8     | libc            | C.UTF-8 | C.UTF-8 |            |           |
+ postgres  | postgres | UTF8     | libc            | C.UTF-8 | C.UTF-8 |            |           |
+ template0 | postgres | UTF8     | libc            | C.UTF-8 | C.UTF-8 |            |           | =c/postgres          +
+           |          |          |                 |         |         |            |           | postgres=CTc/postgres
+ template1 | postgres | UTF8     | libc            | C.UTF-8 | C.UTF-8 |            |           | =c/postgres          +
+           |          |          |                 |         |         |            |           | postgres=CTc/postgres
+(4 rows)
+
+postgres@OlivierLP:~/16/main/pg_tblspc$ mkdir -p /var/lib/postgresql/16/data/tbs2
+postgres=# create tablespace tbs2 location '/var/lib/postgresql/16/data/tbs2';
+CREATE TABLESPACE
+
+
+postgres=#
+
+***** switch to db1 and create tables 
+
+postgres=# \c db1
+You are now connected to database "db1" as user "postgres".
+
+db1=# create table tabl (a int);
+CREATE TABLE
+db1=#
+
+postgres=# \db+
+                                              List of tablespaces
+    Name    |  Owner   |             Location             | Access privileges | Options |  Size   | Description
+------------+----------+----------------------------------+-------------------+---------+---------+-------------
+ pg_default | postgres |                                  |                   |         | 22 MB   |
+ pg_global  | postgres |                                  |                   |         | 565 kB  |
+ tbs1       | postgres | /var/lib/postgresql/16/data      |                   |         | 7568 kB |
+ tbs2       | postgres | /var/lib/postgresql/16/data/tbs2 |                   |         | 0 bytes |
+(4 rows)
+
+postgres=# create table tab2 (a int) tablespace tbs2;
+CREATE TABLE
+postgres=# create table tab3 (a int) tablespace pg_default;
+CREATE TABLE
+postgres=# \db+
+                                                List of tablespaces
+    Name    |  Owner   |             Location             | Access privileges | Options |    Size    | Description
+------------+----------+----------------------------------+-------------------+---------+------------+-------------
+ pg_default | postgres |                                  |                   |         | 22 MB      |
+ pg_global  | postgres |                                  |                   |         | 565 kB     |
+ tbs1       | postgres | /var/lib/postgresql/16/data      |                   |         | 7568 kB    |
+ tbs2       | postgres | /var/lib/postgresql/16/data/tbs2 |                   |         | 4096 bytes |
+(4 rows)
+
+postgres=#
+
+***** ******** How to move objects from one tablespace to another
+
+NB: There will be a lock on the table while moving to another tbs
+
+alter table tabl set tablespace pg_default;
+alter table all in tablespace tbs1 set tablespace pg_default;
+
+*********** Tablespace Properties
+
+alter tablespace space2 set (seq_page_cost=0.5, random_page_cost=0.5);   -- No tested : Need to check further
+
+*********** Set default tablespace for users
+
+postgres=# SET default_tablespace = tbs2;
+SET
+postgres=# show default_tablespace ;
+ default_tablespace
+--------------------
+ tbs2
+(1 row)
+
+postgres=# create table foo (i int);
+CREATE TABLE
+postgres=# select * from pg_tables where tablename='foo';
+ schemaname | tablename | tableowner | tablespace | hasindexes | hasrules | hastriggers | rowsecurity
+------------+-----------+------------+------------+------------+----------+-------------+-------------
+ public     | foo       | postgres   | tbs2       | f          | f        | f           | f
+(1 row)
+
+postgres=# select relname,reltablespace from pg_class where reltablespace in(select
+oid from pg_tablespace where spcname not in ('pg_default','pg_global'));
+ relname | reltablespace
+---------+---------------
+ tab2    |         16397
+ foo     |         16397
+ tab1    |         16390
+(3 rows)
+
+postgres=# select * from pg_tablespace;
+  oid  |  spcname   | spcowner | spcacl | spcoptions
+-------+------------+----------+--------+------------
+  1663 | pg_default |       10 |        |
+  1664 | pg_global  |       10 |        |
+ 16390 | tbs1       |       10 |        |
+ 16397 | tbs2       |       10 |        |
+(4 rows)
+
+postgres=# select  relname,reltablespace from pg_class where relname like 'tab%';
+      relname      | reltablespace
+-------------------+---------------
+ tab1              |         16390
+ tab2              |         16397
+ tab3              |             0
+ table_constraints |             0
+ table_privileges  |             0
+ tables            |             0
+(6 rows)
+
+***********  How to Backup additional tablespace
+
+pg_basebackup --format=p --tablespace-mapping=/tmp/space2=/tmp/space2backup -D plainb
+
+*********** Why is tablespace is used for
+
+- Database growing then create a new tablespace and move objects from existing to new tablespace. 
+- High perfomrming disk move indexes and table to that
+
+------------- How to change data directory
+
+postgres=# show data_directory;
+       data_directory
+-----------------------------
+ /var/lib/postgresql/16/main
+(1 row)
+
+postgres=#
+
+New datadir location: /postgres/data
+
+***********  STEP 2 - SHUTDOWN POSTGRES SERVICE.
+Depending on postgresql installed :
+
+sudo systemctl status postgresql-12    
+sudo systemctl stop postgresql-12 
+sudo systemctl status postgresql-12
+
+or 
+
+If postgre user already in sudoers, no need to add sudo at the beginning :
+
+$ service postgresql status
+$ service postgresql stop
+$ service postgresql status
+
+***********  STEP 3 Copy/move data from current data directory to new location.
+
+#chown postgres: postgres /postgres/data 
+$chmod -R 750/postgres/data
+
+cd /var/lib/pgsql/12/data/ 
+cp -r*/postgres/data cd /postgres/data
+ls -lrt
+
+***********  Step 4 Update New Data dir Location in config file. ***
+
+cp/var/lib/pgsql/12/data/postgresql.conf /var/lib/pgsql/12/data/postgresql.conf_orig
+
+sudo vi /var/lib/pgsql/12/data/postgresql.conf
+
+data_directory = '/postgres/data/'
+
+***********  Step 5 Restarting Postgres ***********  
+
+sudo systemctl start postgresql-12
+sudo systemctl status postgresql-12
+
+or 
+
+$ service postgresql stop
+$ service postgresql status
+
+tail -10f /var/log/messages
+
+***********  Step 6 Verify new location ***
+
+sudo u postgres psql 
+SHOW data_directory;
+
+postgres=# SHOW data_directory; 
+data_directory
+/postgres/data (1 row)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,24 @@
+git init
+git add *
+git commit -m "first commit"
+git branch -M main
+git remote add origin git@github.com:OlearnDev/Postgres.git
+git push -u origin main
+
+https://www.youtube.com/watch?v=Tn67kCaLElk&list=PLwxrtuGg5dNGv4jvDY3TEddn2HIn4-uF9
+
+https://www.youtube.com/watch?v=LA17bOvN-yg&list=PLwxrtuGg5dNGv4jvDY3TEddn2HIn4-uF9&index=2
+
+Installation Directory: C:\Program Files\PostgreSQL\17
+Server Installation Directory: C:\Program Files\PostgreSQL\17
+Data Directory: C:\Program Files\PostgreSQL\17\data
+Database Port: 5432
+Database Superuser: postgres
+Operating System Account: NT AUTHORITY\NetworkService
+Database Service: postgresql-x64-17
+Command Line Tools Installation Directory: C:\Program Files\PostgreSQL\17
+pgAdmin4 Installation Directory: C:\Program Files\PostgreSQL\17\pgAdmin 4
+Stack Builder Installation Directory: C:\Program Files\PostgreSQL\17
+Installation Log: C:\Users\oline\AppData\Local\Temp\install-postgresql.log
+
+user postgres/postgres

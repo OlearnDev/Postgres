@@ -1,0 +1,61 @@
+Installing, this may take a few minutes...
+Please create a default UNIX user account. The username does not need to match your Windows username.
+For more information visit: https://aka.ms/wslusers
+Enter new UNIX username: olinex
+New password:
+Retype new password:
+passwd: password updated successfully
+Installation successful!
+To run a command as administrator (user "root"), use "sudo <command>".
+See "man sudo_root" for details.
+
+Welcome to Ubuntu 24.04.1 LTS (GNU/Linux 5.15.153.1-microsoft-standard-WSL2 x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/pro
+
+ System information as of Fri Nov  8 20:54:06 EST 2024
+
+  System load:  0.7                 Processes:             49
+  Usage of /:   0.1% of 1006.85GB   Users logged in:       0
+  Memory usage: 12%                 IPv4 address for eth0: 172.21.42.111
+  Swap usage:   0%
+
+
+This message is shown once a day. To disable it please create the
+/home/olinex/.hushlogin file.
+olinex@OlivierLP:~$
+
+
+User : olinex / olinex
+
+olinex@OlivierLP:~$ sudo apt update  										: Update ubunut release installed
+
+olinex@OlivierLP:~$ sudo apt install postgresql postgresql-contrib
+olinex@OlivierLP:~$ sudo passwd postgres
+olinex@OlivierLP:~$ id -a postgres											: user postgres/postgres
+uid=105(postgres) gid=109(postgres) groups=109(postgres),108(ssl-cert)
+olinex@OlivierLP:~$
+olinex@OlivierLP:~$ sudo service postgresql start
+
+olinex@OlivierLP:~$ sudo service postgresql status
+● postgresql.service - PostgreSQL RDBMS
+     Loaded: loaded (/usr/lib/systemd/system/postgresql.service; enabled; preset: enabled)
+     Active: active (exited) since Fri 2024-11-08 21:04:21 EST; 7min ago
+   Main PID: 2279 (code=exited, status=0/SUCCESS)
+
+Nov 08 21:04:21 OlivierLP systemd[1]: Starting postgresql.service - PostgreSQL RDBMS...
+Nov 08 21:04:21 OlivierLP systemd[1]: Finished postgresql.service - PostgreSQL RDBMS.
+olinex@OlivierLP:~$
+
+olinex@OlivierLP:~$ sudo usermod -aG sudo postgres
+olinex@OlivierLP:~$ sudo usermod -aG sudo olinex
+
+Nouvelle connexion using bash or powershell :
+
+PS C:\Users\oline> wsl -l
+Windows Subsystem for Linux Distributions:
+Ubuntu (Default)
+PS C:\Users\oline> wsl -d Ubuntu
+olinex@OlivierLP:/mnt/c/Users/oline$
