@@ -39,7 +39,7 @@ Summary below :
 The installation procedure created a user account called postgres that is associated with the default Postgres role.
 
 SWITCH to POSTGRES ACCOUNT
-#sudo iu postgres
+#sudo -u postgres
 
 You can now access a Postgres prompt by typing below command:
 
@@ -51,9 +51,11 @@ postgres# \q	: to exit psql
 
 You have the postgres role configured within the database.
 You can create new roles from the command line with the createrole command. 
-The-interactive flag will prompt you for the name of the new role and also ask whether it should have superuser permissions.
+The-interactive flag will prompt you for the name of the new role and also ask whether it should have superuser 
+permissions.
 
 If you are logged in as the postgres account. createuser-interactive :
+
 $sudo -u postgres createuser --interactive
 
 
@@ -102,7 +104,7 @@ $ pg_ctl -D /postgres/data/instancel initdb
 
 Start the database server using :
 
-$ pg_ctl -D /postgres/data/instancel
+$ pg_ctl -D /postgres/data/instancel start
 or 
 $ pg_ctl -D /postgres/data/instancel -l logfile start
 
@@ -152,7 +154,7 @@ postgres@OlivierLP:~/16/main/pg_tblspc$ ls -ltrh
 total 0
 lrwxrwxrwx 1 postgres postgres 27 Nov  8 22:33 16390 -> /var/lib/postgresql/16/data
 
-NB : l'id pour le nouveau tbs est : 16390
+NB : l''id pour le nouveau tbs est : 16390
 
 ***** Create database with default tbs :
 
@@ -259,6 +261,7 @@ postgres=# select * from pg_tablespace;
 (4 rows)
 
 postgres=# select  relname,reltablespace from pg_class where relname like 'tab%';
+
       relname      | reltablespace
 -------------------+---------------
  tab1              |         16390
@@ -311,12 +314,13 @@ $ service postgresql status
 $chmod -R 750/postgres/data
 
 cd /var/lib/pgsql/12/data/ 
-cp -r*/postgres/data cd /postgres/data
+cp -r * /postgres/data 
+cd /postgres/data
 ls -lrt
 
 ***********  Step 4 Update New Data dir Location in config file. ***
 
-cp/var/lib/pgsql/12/data/postgresql.conf /var/lib/pgsql/12/data/postgresql.conf_orig
+cp /var/lib/pgsql/12/data/postgresql.conf /var/lib/pgsql/12/data/postgresql.conf_orig
 
 sudo vi /var/lib/pgsql/12/data/postgresql.conf
 
