@@ -289,7 +289,7 @@ postgres=# show data_directory;
  /var/lib/postgresql/16/main
 (1 row)
 
-postgres=#
+postgres=#  
 
 New datadir location: /postgres/data
 
