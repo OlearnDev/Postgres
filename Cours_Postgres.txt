@@ -215,7 +215,7 @@ Type "help" for help.
 postgres=# create tablespace tbs1 location '/var/lib/postgresql/16/data';
 CREATE TABLESPACE
 
-postgres=# \db+
+postgres=# \db+		: see all tbs
                                             List of tablespaces
     Name    |  Owner   |          Location           | Access privileges | Options |  Size   | Description
 ------------+----------+-----------------------------+-------------------+---------+---------+-------------
@@ -243,6 +243,7 @@ total 0
 lrwxrwxrwx 1 postgres postgres 27 Nov  8 22:33 16390 -> /var/lib/postgresql/16/data
 
 NB : l''id pour le nouveau tbs est : 16390
+
 
 ***** Create database with default tbs :
 
