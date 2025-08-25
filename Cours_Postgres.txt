@@ -1,0 +1,88 @@
+----- PostegreSQL -----------
+
+https://www.youtube.com/watch?v=Tn67kCaLElk&list=PLwxrtuGg5dNGv4jvDY3TEddn2HIn4-uF9&index=2
+
+Intro and Architecture -----------------------------
+
+FEATURES OF POSTGRES
+
+	Multi-Version Concurrency Control (MVCC) architecture.
+	Granular access controls
+	Tablespaces
+	Asynchronous replication
+	Online/hot backups, write-ahead logging.
+	Supports international character sets
+	Highly scalable both in the quantity of data
+	PostgreSQL''s write-ahead logging makes it a highly fault-tolerant database
+	
+- Open source 
+
+*** Memory and process 
+
+(See arch in word file)
+
+Data Flow :
+
+	- Application connects to the postmaster process.
+	- The postmaster checks the application''s rights and, if successful, starts a new Postgres process and connects 
+	  it with the client application.
+	- The instance doesn''t write or read the requested data directly to or from disk files. Instead, it buffers them 
+	  in a shared memory area called the shared buffers.
+	- The Postgres process acts on the shared buffers and WAL buffers and manipulates their contents.
+	- The client requests a Commit, and the WAL writer process writes and flushes all WAL records resulting from this
+	  transaction to the WAL file. As the WAL file, in contrast to the data files, is written strictly sequentially,
+	- Periodically, the background writer process checks the shared buffers for 'dirty' pages and writes them to the 
+	  appropriate data files.
+	- In essence, the instance contains at least three processes: WAL writer, background writer, and checkpointer, and 
+	  one Postgres process per connection. In most cases, there are a few more processes running
+
+Background Processes :
+
+Process				Description
+-------------		--------------------------------------------
+Logger				Write the error message to the log file.
+Checkpointer		When a checkpoint occurs, the dirty buffer is written to the file.
+Writer				Periodically writes the dirty buffer to a file.
+WAL Writer			Write the WAL buffer to the WAL file.
+Autovacuum Launcher	Fork autovacuum worker when autovacuum is enabled.lt. It is the responsibility of the autovacuum 
+					daemon to carry out vacuum operations on bloated tables on demand.
+Archiver			When in Archive.log mode, copy the WAL file to the specified directory.
+Stats Collector		DBMS usage statistics such as session execution information (pg_stat_activity) and table usage 
+					statistical information (pg_stat_all_tables) are collected
+					
+
+Memory :
+
+Memory TYPE			Description 
+---------------		-------------------------------------------------		
+Shared Memory		(database caching and transaction log caching)
+
+Shared Buffer		- Minimizes DISK IO
+					- Access very large (tens, hundreds of gigabytes) buffers quickly
+					- Minimizes contention when many users access it at the same time
+					- Frequently used blocks must be in the buffer for as long as possible
+
+WAL Buffer 			- Temporarily stores changes to the database
+					- Written to the WAL file
+					- Useful for backup and recovery
+
+Postmaster Process	- The Postmaster process is the first process started when you start PostgreSQL
+					- At startup, performs recovery,
+					- Initialize shared memory
+					- Run background processes
+					- It also creates a backend process when there is a connection request from the client process				
+					
+					
+
+
+
+
+
+
+
+
+
+
+
+
+
