@@ -400,7 +400,7 @@ $ service postgresql status
 ***********  STEP 3 Copy/move data from current data directory to new location.
 
 #chown postgres: postgres /postgres/data 
-$chmod -R 750/postgres/data
+$chmod -R 750 /postgres/data
 
 cd /var/lib/pgsql/12/data/ 
 cp -r * /postgres/data 
@@ -437,6 +437,38 @@ data_directory
 /postgres/data (1 row)
 
 
+6.Introduction to PostgreSQL log_statement ----------****************************************************
+
+- It''s related to error and error reporting, along with warnings and database queries in a logfile.
+- The default log_statement option in the PostgreSQL configuration file is none, which means nothing will be logged 
+  into the error file.
+
+	Options:
+		NONE
+		DDL 
+		MOD
+		ALL
+
+How does log_statement work in PostgreSQL?
+
+- It''s a useful parameter in PostgreSQL used to log errors in the logfile, database warning messages, and SQL queries.
+- Log_statements have four options available in PostgreSQL, as mentioned below.
+
+None:
+	- This option of log_statement is defined as not logging any query in the error log file.
+	- This is the default configuration option of log_statement available. This is also defined as turning off the 
+	  log_statement parameter for PostgreSQL.
+DDL: 
+	- Log all queries that are under the category of the DDL statement.
+		E.g., create, alter, and drop statements.
+A11:
+	- This option is defined as logging all statements executed by the user
+	- It is logging DDL, DML, and all the query language in PostgreSQL.
+	- Not advised
+
+Mod:
+	- This option in log_statement is defined as log DDL query as well as log the modifying statement like delete, 
+	  update, truncate, insert, copy, execute, and prepare
 
 
 
