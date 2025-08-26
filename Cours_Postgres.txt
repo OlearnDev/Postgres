@@ -627,13 +627,28 @@ Tables :
 Views :
 
   Repmgr.show_nodes: Based on the Repmgr.nodes table, additionally showing name of the server''s upstream node.
-  Repmgr.replication_status: When Repmgr''s monitoring is enabled, shows current monitoring status for each node.
+  Repmgr.replication_status: When Repmgr''s monitoring is enabled, shows current monitoring status for each stan...
   The Repmgr metadata schema can be stored in an existing database or in its own dedicated database. Note that 
-     the Repmgr metadata schema cannot reside on a database server that is not part of the replication managed
-	 by Repmgr
+     the Repmgr metadata schema cannot reside on a database server that is not part of the replication c... 
+	 managed by Repmgr
 
 A database user must be available to access this database and make necessary changes
+This user does not need to be a superuser, however some operations such as the initial installation of the 
+  repmgr extension will require a superuser connection (this can be specified where required with the cc
 
+Installation of REPMGR
+-----------
+  repmgr can be installed from binary packages provided by your OS packaging system, or from source.
+
+Requirements for installing repmgr
+-----------
+	All cluster servers have the same major version of PostgreSQL, same minor version.
+
+	repmgr must be installed on each server in the replication cluster.
+	If installing repmgr from packages, the package version must match the PostgreSQL version.
+	If installing from source, repmgr must be compiled against the same major version.
+
+repmgr compatibility matrix
 
 
 
