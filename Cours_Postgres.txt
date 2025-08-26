@@ -578,16 +578,61 @@ In streaming replication, three kinds of processes work cooperatively.
 	- and then, a WAL receiver and a startup process on the standby server receives and replays this data.
 	- A WAL sender and a WAL receiver communicate using a single TCP connection.
 
-PostgreSQL is a widely used relational database that supports both logical and physical replication
-Logical replication streams high-level changes from the primary database cluster to the replica databases.
-Using logical replication, you can stream changes to just a single database or table in a database.
+PostgreSQL is a widely used relational database that supports both logical and physical replication:
 
-In physical replication, changes to the WAL (Write-Ahead-Logging) log file are streamed and replicated in the 
-replica clusters. As a result, you can''t replicate specific areas of a primary database cluster; instead, all 
-changes to the primary are replicated
+- Logical replication streams high-level changes from the primary database cluster to the replica databases.
+  Using logical replication, you can stream changes to just a single database or table in a database.
+
+- In physical replication, changes to the WAL (Write-Ahead-Logging) log file are streamed and replicated in the 
+ replica clusters. As a result, you can''t replicate specific areas of a primary database cluster; instead, all 
+ changes to the primary are replicated
 
 
+Overview of REPMGR ****************************
 
+repmgr is an open-source tool for managing replication and failover of PostgreSQL servers.
+It supports and enhances PostgreSQL''s built-in streaming replication which provides a single read/write 
+primary server and one or more read-only standbys containing near-real-time copies of the primary server''s 
+database.
+
+It provides two main tools:
+
+	1) repmgr:
+
+		A command-line tool used to perform administrative tasks such as:
+
+		Setting up standby servers.
+		Promoting a standby server to primary.
+		Switching between primary and standby servers.
+		Displaying the status of servers in the replication cluster.
+
+	2) repmgrd:
+
+		A daemon that actively monitors servers in a replication cluster and performs below:
+		 - Monitoring and recording replication performance
+		 - Performing failover by detecting failure of the primary and promoting the most suitable standby server
+
+Repmgr User and Metadata
+
+Repmgr needs to store information about the servers in the cluster in a schema.
+This schema is automatically created by the Repmgr extension which is installed during the first step in 
+initializing a Repmgr-administered cluster (Repmgr primary register) and contains the following objects:
+
+Tables :
+
+	Repmgr.events: Records events of interest
+	Repmgr.nodes: Connection and status information for all hosts of the cluster.
+	Repmgr.monitoring_history: Historical standby monitoring information.
+
+Views :
+
+  Repmgr.show_nodes: Based on the Repmgr.nodes table, additionally showing name of the server''s upstream node.
+  Repmgr.replication_status: When Repmgr''s monitoring is enabled, shows current monitoring status for each node.
+  The Repmgr metadata schema can be stored in an existing database or in its own dedicated database. Note that 
+     the Repmgr metadata schema cannot reside on a database server that is not part of the replication managed
+	 by Repmgr
+
+A database user must be available to access this database and make necessary changes
 
 
 
