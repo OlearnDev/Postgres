@@ -676,16 +676,57 @@ PostgreSQL Configuration
 On the primary server, a PostgreSQL instance must be initialized and running.
 The following replication settings may need to be adjusted:
 
-	max_wal_senders = 10
-	max_replcation_slots = 10   -- used in our case. To be set in repmgr.conf file
-	wal_standby='hot_standby'
+# Enable replication connections; set this value to at least one more than the number of standbys that will connect 
+# to this server. (Note that repmgr will execute "pg_basebackup" in WAL streaming mode which requires two free 
+# WAL senders).
 
+max_wal_senders = 10
 
+# If using replication slots, set this value to at least one more than the number of standbys that will connect to 
+# this server. Note that repmgr will only make use of replication slots if "use_replication_slots" is set to "true" in
+# "repmgr.conf". (If you are not intending to use replication slots, this value can be set to "0").
 
+max_replication_slots = 10  -- used in our case
 
+# Ensure WAL files contain enough information to enable read-only queries on the standby.
+# PostgreSQL 9.5 and earlier: one of 'hot_standby' or 'logical'
+# PostgreSQL 9.6 and later: one of 'replica' or 'logical'
+# ('hot_standby' will still be accepted as an alias for 'replica')
 
+wal_level = 'hot_standby'
 
+# Enable read-only queries on a standby
+# (Note: this will be ignored on a primary, but we recommend including it anyway, in case the primary later becomes 
+# a standby)
 
+hot_standby = on
+
+# Enable WAL file archiving
+
+archive_mode = on
+
+# Set archive command to a dummy command; this can later be changed without needing to restart the PostgreSQL instance.
+
+archive_command = '/bin/true'
+
+Create the repmgr user and database
+----------------------
+createuser -s repmgr
+createdb repmgr -0 repmgr
+ALTER USER repmgr SET search_path TO repmgr, "$user", public;
+
+Configuring authentication in pg_hba.conf
+--------------------------------------------
+Ensure the repmgr user has appropriate permissions in pg_hba.conf and can connect in replication mode;
+pg_hba.conf should contain entries similar to the following:
+
+local	replication	repmgr					trust
+host	replication	repmgr	127.0.0.1/32	trust
+host	replication	repmgr	192.168.1.0/24	trust
+
+local	repmgr		repmgr					trust
+host	repmgr		repmgr	127.0.0.1/32	trust
+host	repmgr		repmgr	192.168.1.0/24	trust
 
 
 
