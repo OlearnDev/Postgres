@@ -470,13 +470,121 @@ Mod:
 	- This option in log_statement is defined as log DDL query as well as log the modifying statement like delete, 
 	  update, truncate, insert, copy, execute, and prepare
 
+Example #1  Log statement with none options.**************************
 
+It will not log anything into the error log.
 
+psql script:
 
+show log statement;
 
+create table course (course_no integer, name text, price numeric); 
+INSERT INTO course (course_no, name, price) VALUES
+	(1, 'postgres', 150),
+	(2, "mysql", 160),
+	(3, 'mongodb', 170);
 
+select from course;
 
+tail -10f postgresql-***.log
 
+Example #2  Log statement using DOL options. **************************
+
+In the following example, we have used DDL options with the log statement parameter. It will log only the DDL 
+statement into the error log.
+
+Psql script:
+
+alter system, set log statement 'DDL';
+
+$sudo systemctl restart postgresql-12 
+
+$psql
+postgres# show log statement;
+
+	log_statement
+	--------
+	ddl
+	(1 row)
+
+CREATE TABLE course (course_no integer,name, text,price, numeric);
+INSERT INTO course (course_no, name, price) VALUES
+	(1, 'postgres', 150),
+	(2, 'mysql', 160),
+	(3, 'mongodb', 170);
+
+postgres# select from course;
+
+course_no	name		price
+
+1			postgres	150
+2			mysql		160
+3			mongodb		170
+(3 rows)
+
+delete from course;
+
+Example #3 Log statement using ALL options. **************************
+
+In the example below, we have used ALL options with the log statement parameter. It will log all statements 
+into the error log.
+
+Psql script:
+
+alter system set log statement "ALL";
+
+show log statement;
+
+CREATE TABLE course (course_no integer,name text,price numeric);
+select * from course;
+
+Example #4  Log statement using mod options.  **************************
+
+In the following example, we have used mod options with the log statement parameter. It will log DDL and DML 
+into the error log.
+
+Psql script:
+
+alter system set log statement 'mod';
+$sudo systemctl restart postgresql-12 
+
+$psql
+postgres# show log statement;
+
+explain select * from courses;
+INSERT INTO course (course_no, name, price) VALUES
+	(1, 'postgres', 150),
+	(2, "mysql", 160),
+	(3, 'mongodb', 170);
+
+tail -10f postgresql-Mon.log
+
+8.Repmgr (Replication & Failover Management) **************************
+
+**** Streaming Replication in PostgreSQL (2 EC2 PostgreSQL-13)******
+
+Postgres replication is the process of copying data from one database host (primary) to another database host 
+(standby).
+
+In version 9.0 (back in 2010), streaming replication was introduced.
+
+- Streaming replication in PostgreSQL works on log shipping.
+- Every transaction in PostgreSQL is written to a transaction log called WAL (write-ahead log) to achieve 
+  durability.
+- A slave uses these WAL segments to continuously replicate changes from its master.
+
+In streaming replication, three kinds of processes work cooperatively.
+	- A WAL sender process on the primary server sends WAL data to the standby server;
+	- and then, a WAL receiver and a startup process on the standby server receives and replays this data.
+	- A WAL sender and a WAL receiver communicate using a single TCP connection.
+
+PostgreSQL is a widely used relational database that supports both logical and physical replication
+Logical replication streams high-level changes from the primary database cluster to the replica databases.
+Using logical replication, you can stream changes to just a single database or table in a database.
+
+In physical replication, changes to the WAL (Write-Ahead-Logging) log file are streamed and replicated in the 
+replica clusters. As a result, you can''t replicate specific areas of a primary database cluster; instead, all 
+changes to the primary are replicated
 
 
 
