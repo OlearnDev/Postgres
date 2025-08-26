@@ -634,7 +634,7 @@ Views :
 
 A database user must be available to access this database and make necessary changes
 This user does not need to be a superuser, however some operations such as the initial installation of the 
-  repmgr extension will require a superuser connection (this can be specified where required with the cc
+  repmgr extension will require a superuser connection (this can be specified where required with the co...
 
 Installation of REPMGR
 -----------
@@ -648,9 +648,37 @@ Requirements for installing repmgr
 	If installing repmgr from packages, the package version must match the PostgreSQL version.
 	If installing from source, repmgr must be compiled against the same major version.
 
-repmgr compatibility matrix
+Installing repmgr from packages
+-----------
+repmgr RPM packages for RedHat/CentOS variants and Fedora are available from the 2ndQuadrant public repository;
 
+sudo yum install repmgri1
 
+Prerequisites for setting up a basic replication cluster with repmgr
+-----------
+We''ll assume the
+	primary is called node with IP address 192.168.1.51
+	standby is called node2 with IP address 192.168.1.61
+
+	Following software must be installed on both servers:
+		PostgreSQL
+		repmgr (matching the installed PostgreSQL major version)
+
+At the network level
+-----------
+	- Connections between the PostgreSQL port (default: 5432) must be possible in both directions.
+	- If you want repmgr to copy configuration files which are located outside the PostgreSQL data directory,
+	    and/or to test switchover functionality,you need passwordless SSH connections between both servers, 
+	    and rsync should be installed
+
+PostgreSQL Configuration
+-----------
+On the primary server, a PostgreSQL instance must be initialized and running.
+The following replication settings may need to be adjusted:
+
+	max_wal_senders = 10
+	max_replcation_slots = 10   -- used in our case. To be set in repmgr.conf file
+	wal_standby='hot_standby'
 
 
 
