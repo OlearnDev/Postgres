@@ -718,19 +718,80 @@ ALTER USER repmgr SET search_path TO repmgr, "$user", public;
 Configuring authentication in pg_hba.conf
 --------------------------------------------
 Ensure the repmgr user has appropriate permissions in pg_hba.conf and can connect in replication mode;
-pg_hba.conf should contain entries similar to the following:
+pg_hba.conf should contain entries similar to the following:  [6 lines important for replication]
 
-local	replication	repmgr					trust
-host	replication	repmgr	127.0.0.1/32	trust
-host	replication	repmgr	192.168.1.0/24	trust
+	local	replication	repmgr					trust
+	host	replication	repmgr	127.0.0.1/32	trust
+	host	replication	repmgr	192.168.1.0/24	trust
 
-local	repmgr		repmgr					trust
-host	repmgr		repmgr	127.0.0.1/32	trust
-host	repmgr		repmgr	192.168.1.0/24	trust
+	local	repmgr		repmgr					trust
+	host	repmgr		repmgr	127.0.0.1/32	trust
+	host	repmgr		repmgr	192.168.1.0/24	trust
 
+Preparing the standby
+----------------
+	- Do not create a PostgreSQL instance (i.e., do not execute initdb), but do ensure the destination data directory 
+	  (and any other directories you want PostgreSQL to use) exist and are owned by the Postgres system user.
+	- Permissions must be set to 0700 (drwx------).
+	- Check the primary database is reachable from the standby using psql:
 
+	  psql 'host=node1 user=repmgr dbname=repmgr connect_timeout=2'
 
+repmgr configuration file Primary
+----------------
+  Create a repmgr.conf file on the primary server. The file must contain at least the following parameters:
 
+	node_id=1
+	node_name='node1'
+	conninfo='host=node1 user=repmgr dbname=repmgr connect_timeout=2'
+	data_directory='/var/lib/postgresql/data'
+
+  repmgr.conf should not be stored inside the PostgreSQL data directory, as it could be overwritten when setting up
+  or reinitializing the PostgreSQL server.
+
+Register the primary server
+----------------
+To enable repmgr to support a replication cluster, the primary node must be registered with repmgr. This installs the 
+repmgr extension and metadata objects, and adds a metadata record for the primary server:
+
+	$ repmgr -f /etc/repmgr.conf primary register   --repmgr.conf has the 4 params above
+
+	INFO: connecting to primary database..
+	NOTICE: attempting to install extension "repmgr"
+	NOTICE: "repmgr" extension successfully installed
+	NOTICE: primary node record (id: 1) registered
+
+Verify the status of the cluster like this:
+
+$ repmgr -f /etc/repmgr.conf cluster show
+
+ID	Name	Role 	|Status 	|Upstream |Connection string
+-------------------------------------------
+1	node1	primary |* running |		  | host node1 dbname=repmgr user repmgr connect_timeout=2
+
+The record in the repmgr metadata table will look like this:
+
+	repmgr=# SELECT * FROM repmgr.nodes;
+	
+	-[ RECORD 1]---+--------------
+	node_id				1
+	upstream_node_id	
+	active				t
+	node_name			node1
+	type				primary
+	location			default
+	priority			100
+	conninfo			host node1 dbname=repmgr user repmgr connect_timeout=2
+	replzer				repmgr
+	slot_name
+	config_file			/etc/repmgr.conf
+
+Each server in the replication cluster will have its own record.
+If repmgrd is in use, the fields upstream_node_id, active, and type will be updated when the node''s status or role 
+  changes.
+
+Clone the standby server
+-----------------
 
 
 
