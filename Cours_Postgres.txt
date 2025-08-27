@@ -938,4 +938,174 @@ postgres # SELECT tablename, indexname, indexdef from pg_indexes WHERE tablename
 
 10.Postgresql on Docker -------------------------------------------------------------------------------
 
+HOW TO INSTALL POSTGRESQL ON DOCKER
 
+Uninstall Old Versions of Docker:
+	sudo apt-get remove docker docker-engine docker.io
+
+Docker installation on Ubuntu: 
+	sudo apt-get update
+
+How to install Docker on Ubuntu: sudo apt install docker.io
+
+Start and automate Docker on host reboot
+
+	sudo systemctl start docker
+	sudo systemctl enable docker
+	sudo systemctl status docker
+
+How to check docker version
+	docker --version
+
+Step to pull Postgres image and the container. Let''s pull postgres image onto Ubuntu system from docker hub.
+	sudo docker pull postgres
+
+How to verify all existing Docker images.
+	sudo docker images
+
+Once verified, start the Postgres instance.
+
+	sudo docker run -name postgres-docker_3e POSTGRES_PASSWORD=password -p 5433:5433 -d postgres
+	sudo docker run -name postgres-docker_2e POSTGRES_PASSWORD=password p 5434:5434 d postgres
+
+Check Docker for the containers that are running.
+
+	sudo docker ps
+
+Connect with the Docker Postgres container and connect to the psql command.
+
+	sudo docker exec -it postgres-0 psql -U postgres
+	sudo docker exec -it postgres-docker_2 psql -U postgres
+
+--- additional commands 
+
+Check Docker version.
+	sudo docker-version
+
+How to download Docker image.
+	sudo docker pull image_name
+
+How to list down all existing images installed.
+	sudo docker images
+
+How to run Docker image:
+	sudo docker run itd image_name
+
+How to check which container is running in Docker.
+	sudo docker ps
+
+To list all Dockers with status and with the container info.
+	sudo docker ps -a
+
+How to access Docker container:
+	sudo docker exec it container_id bash
+
+How to remove a Docker container.
+	sudo docker rm container_id
+
+To remove a particular image.
+	sudo docker rmi image_id
+
+How to restart a Docker container.
+	sudo docker restart container_id
+
+How to stop a Docker container.
+	sudo docker stop container_id
+
+
+12.PostgreSQL internat authentication -------------------------------------------------------------------------------
+
+PostgreSQL manages internal authentication mechanisms as mentioned in the pg_hba.conf file
+
+cat pg_hba.conf|grep i method
+
+	# METHOD can be "trust", "reject", "md5", "password", "scram-sha-256",
+	# Authentication methods refer to the "Client Authentication"
+
+	Note: This is an inter-process communication mechanism that allows bidirectional data exchange between processes 
+	running on the ...
+
+	Column of all pg_hba.conf
+	--------------------
+
+	# TYPE		DATABASE		USER		ADDRESS		METHOD
+	# "local" is for Unix domain socket connections only
+	local		all				all						 peer
+
+	# IPv4 local connections:
+	host		all				all			127.0.0.1/32 ident
+
+	# IPv6 local connections:
+	host		all				all			::1/128		 ident
+
+Column 1:Local is used by Unix-Domain socket. If it is a host, mention the host IP address in the address column.
+Column 2: Used for the database; mention the database name.
+   If it has been set to all, then all the databases in the PostgreSQL cluster will use the same auth mechanism.
+Column 3: It is the user. It can be set to separate auth methods for different users, and "all" means for all users.
+Column 4: IP address. For example, the IP address can use a particular authentication method.
+Column 5: Which auth mode of authentication has to be used
+
+NB: Different Methods :***********
+
+-bash-4.2$ cat $PGDATA/pg_hba.conf|grep i method
+
+local		DATABASE 	USER 	METHOD 		[OPTIONS]
+host 		DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS]
+hostssl 	DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS]
+hostnossl	DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS]
+hostgssenc	DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS]
+hostnogssenc DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS] 
+
+Method can be "trust", "reject", "md5", "password", "scram-sha-256", authentication methods -- refer to the 
+"Client Authentication"
+********************************
+
+Auth method Trust
+--------------------
+A user mentioned with trust does not require any password for authentication.
+
+Example-1
+
+# TYPE	DATABASE	USER	ADDRESS			METHOD
+
+host	all			all		127.0.0.1/32	trust   <- Any conn from localhost will go through trust auth method and will be accepted
+
+Example-2
+
+# TYPE	DATABASE	USER	ADDRESS			METHOD
+
+host	all			all		127.0.0.1/32	reject <- Any host that is not localhost will have the connection rejected.
+
+Testing
+	Trust Authentication
+	--------------------
+		Login From localhost
+			postgres@127.0.01:~$ psql postgres -h 127.0.0.1 -U postgres
+
+	Reject Authentication
+	--------------------
+	Login From Remote Host
+		postgres@IP~$ psql postgres -h IP U postgres
+		psql: error: could not connect to server:
+		FATAL: pg_hba.conf rejects connection for host "IP", user "postgres", database "postgres"
+
+md5 Authentication
+--------------------
+When using md5 authentication, you must provide the password.
+
+Example
+
+host	database	user 	address			auth-method
+host	all			all		127.0.0.1/32	md5
+
+testing
+	psql postgres h IP -U postgres
+
+SCRAM Authentication
+--------------------
+It is one of the most secure authentication methods, using cryptographically hashed security mechanisms to store 
+passwords on the system.
+
+testing
+	SET password encryption = 'scram-sha-256';
+	
