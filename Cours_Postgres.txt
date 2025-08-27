@@ -1300,3 +1300,76 @@ From here onwards, all logs will be written to the log in the PostgreSQL data_di
 psql
 
 \l
+
+14.PostgreSQL-CREATE Database ------------------------------------------------------*********************
+
+	1. Using CREATE DATABASE.
+	2. Using createdb, a command-line utility
+
+Using CREATE DATABASE
+--------------------
+This command will create a database on PostgreSQL (psql).
+
+If you have appropriate privileges to create a database, by default, the new database will be created by copying the system database template 1.
+
+Syntax:
+
+The basic syntax of the CREATE DATABASE statement is as follows:
+
+	CREATE DATABASE dbname;
+
+	where dbname is the name of the database to create.
+
+Example:
+
+It creates testdb in your PostgreSQL schema.
+
+	postgres# CREATE DATABASE testdb;
+
+
+
+Using createdb Command
+--------------------
+
+The executable createdb is a utility for CREATE DATABASE.
+
+The only difference between createdb and PSO CREATE DATABASE is that the former can be run directly from the 
+command line and it allows a comment to be added to the database, all in one command.
+
+Syntax:
+
+The syntax for createdb is as shown below:
+
+	createdb [option...] [dbname [description]]
+
+The table given below lists the parameters with their descriptions.
+
+S. No. Parameter & Description
+
+	1 dbname: The name of a database to create.
+	2 description: Specifies a comment to be associated with the newly created database.
+	3 options: Command-line arguments, which createdb accepts.
+	No. Option & Description
+
+	 -D tablespace :Specifies the default tablespace for the database.
+	 -e Echo the commands that createdb generates and sends to the server.
+     -E encoding: Specifies the character encoding scheme to be used in this database
+	 
+	4 -l locale Specifies the locale to be used in this database.
+	5 -T template Specifies the template database from which to build this database.
+	6 --help Show help about createdb command line arguments, and exit.
+	7 -h host (Specifies the host name of the machine on which the server is running)
+	8 -p port (Specifies the TCP port or the local Unix domain socket file extension on which the server is listening for connections)
+	9 -U username (User name to connect as)
+   10 -w Never issue a password prompt.
+   11 -W Force created to prompt for a password before connecting to a database.
+
+	SELECT CURRENT_USER usr, 'HOST' host, inet_server_port() port;
+
+	createdb -h localhost -p 5432 -U postgres testdb
+	password******
+
+	postgres# \l
+
+22.pgbackrest : PostgreSQL backup and restore --------------------------------------------*******************
+
