@@ -869,6 +869,73 @@ Both nodes are now registered with repmgr and the records have been copied to th
 
 Demo pending ...coming ASAP
 
+9.PSQL CHEATSHEET.  [Usual commands]-------------------------------------------------------------------------------
 
+How to Connect to psql Locally on Linux
+
+1# sudo u postgres psql
+or
+2. # sudo su postgres
+
+	2a. $ psql U postgres -p 5432 -W    <- Option -W prompts for the password
+	2b. $ psql U postgres -p 5432 -w	<- Option -w to login without password
+	2c. $ psql
+
+3. How to connect psql remotely from the command line.
+
+Note: psql is built as a "console application." Since the Windows console, windows use a different encoding than the rest of the system.
+
+chcp 1252
+
+cd C:\Program Files\PostgreSQL\12\bin
+psql -U postgres p 5432 h 192.168.1.61 -W	<- To connect remotely 
+  password
+
+4. \d
+
+5.	\1: List databases
+	\c dbname "Connect to a database"
+	psql -h 192.168.1.61 p 5432 U postgres dvdrental
+
+6. Tables related commands
+	\dt						: list of tables of connected db
+	\c dvdrental
+	\dt
+	\d tablename  : Show table definition (columns, etc.) including triggers
+	\d+ tablename : More detailed table definition including description and physical disk size.
+	\dt *.*
+
+postgres # select * from pg_catalog.pg_tables where schemaname != 'pg_catalog' and schemaname != 'information_schema';
+
+7.  \di 	 :List indexes
+	\d actor : Lists indexes of a particular table 
+
+postgres # SELECT tablename, indexname, indexdef from pg_indexes WHERE tablename LIKE '%actor%' ORDER BY tablename, indexname;
+
+8. \dn: List schemas
+	CREATE SCHEMA myschema;
+	DROP SCHEMA myschema;
+	DROP SCHEMA myschema CASCADE;
+	
+9.	\dy: List events
+	\df: List functions
+	\df+ <function_name> Show function SQL code.
+	\dT+: List all data types
+	\dv: List views
+	\dx: List all extensions installed
+	\x: Pretty-format query results instead of the not-so-useful ASCII tables
+	\copy (SELECT FROM_table_name) TO 'file_path_and_name.csv' WITH CSV: Export a table as CSV
+	\copy (SELECT * FROM actor) TO 'c:\actor.csv' WITH CSV: Export a table as CSV
+	\des+: List all foreign servers
+	\dE[S+]: List all foreign tables
+
+10.	\du: List users
+	\du appreporting_user1: List a username if present.
+
+	set role appreporting_user1; Change the role for the current session to testuser.
+
+	\deu+: List all user mappings on the server
+
+10.Postgresql on Docker -------------------------------------------------------------------------------
 
 
