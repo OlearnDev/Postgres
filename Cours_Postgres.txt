@@ -1099,7 +1099,7 @@ host	database	user 	address			auth-method
 host	all			all		127.0.0.1/32	md5
 
 testing
-	psql postgres h IP -U postgres
+	psql postgres -h IP -U postgres
 
 SCRAM Authentication
 --------------------
@@ -1109,3 +1109,16 @@ passwords on the system.
 testing
 	SET password encryption = 'scram-sha-256';
 	
+	ALTER USER postgres WITH PASSWORD 'password';
+
+Modify hab.conf as below
+
+host 	database 	user 	address		auth-method
+host	all			all		IP/32		<span class="s1">scram-sha-256</span>
+
+psql postgres -U postgres
+
+13.Backup and Restore using pg_basebackup ------------------------------------------------------------------------
+
+
+
