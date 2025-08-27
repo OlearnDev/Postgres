@@ -1373,3 +1373,83 @@ S. No. Parameter & Description
 
 22.pgbackrest : PostgreSQL backup and restore --------------------------------------------*******************
 
+What is pgBackRest?
+------------
+pgBackRest is an open source backup tool that creates physical backups with enhancements as compatible with 
+the pg_basebackup tool. It can be used to perform an initial database copy for streaming replication by using 
+an existing backup, or we can use the delta option to rebuild an old standby server.
+
+Backup Terminology
+------------
+Full Backup:
+	pgBackRest copies the entire contents of the database cluster to the backup.
+	The first backup of the database cluster is always a full backup.
+	pgBackRest is always able to restore a full backup directly.
+	The full backup does not depend on any files outside of the full backup for consistency.
+
+Differential Backup:
+
+	pgBackRest copies only those database cluster files that have changed since the last full backup. 
+	The advantage of a differential backup is that it requires less storage than a full backup. 
+	To restore a full backup, a diffbkp backup must be valid.
+
+Incremental Backup:
+
+	pgBackRest copies only those database cluster files that have changed since the last backup. 
+	The last successful backup can be anyone below:
+		Incremental backup
+		Differential backup
+		Full backup
+
+Enable sudo access to Postgres
+------------
+	sudo vi /etc/sudoers
+
+	Search for section "NOPASSWD" in the file :
+
+	/NOPASSWD
+
+	Add this line :
+	Postgres	ALL=(ALL) NOPASSWD: ALL
+	
+Disable selinux: by editing file /etc/selinux/config	
+
+****** Start of pgbackrest configuration from here ***
+
+On RHEL/CentOS/OEL:
+---------------------
+sudo yum install pgbackrest
+
+	Installed products updated.
+
+Installed:
+	pgbackrest-2.35-1.rhe18.x86_64
+
+Complete!
+
+[ec2-user@ip-172-31-12-96 ~]$ file /usr/bin/pgbackrest
+/usr/bin/pgbackrest: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/1d-
+
+Creation of log and repository directory for pgbackrest
+------------------------------------------
+	sudo su postgres
+	file /usr/bin/pgbackrest 
+
+owner will be postgres for repo and log directory;
+
+as EC2 root
+---------
+	sudo mkdir /var/lib/pgbackrest 
+	sudo chown postgres:postgres 
+	/var/lib/pgbackrest 
+	sudo mkdir -p /var/log/pgbackrest 
+	sudo chown postgres:postgres /var/log/pgbackrest
+
+Configuration file for pgbackrest
+---------
+What is Stanza in Postgres?
+	A stanza defines the backup configuration for a specific PostgreSQL database cluster. 
+	Any global configuration sections can be overridden to define stanza-specific settings.
+
+	sudo su postgres sudo mkdir /etc/pgbackrest
+
