@@ -1213,6 +1213,15 @@ Initiate a compressed pg basebackup to a destination directory
 	-z, 	gzip				compress tar output
 	-X		--wal-method=none 	fetch stream
 
+	$ pq_basebackup -h localhost -p 5432 -U postgres -D/var/lib/pgsql/pg_backup -Ft-z-Xo -P
+	915653/915653 kB (100%), 1/1 tablespace
+
+	[postgres@pg pg backup]$ ls -lrt
+	total 127244
+	-rw------ 1 postgres postgres 125726001 Oct 1 08:14 base.tar.gz
+	-rw------ 1 postgres postgres   4548337 Oct 1 08:14 backup_manifest 
+	-rw------ 1 postgres postgres     17087 Oct 1 08:14 pg_wal.tar.gz
+
 Initiate an uncompressed pg_basebackup to a destination directory
 
 	mkdir -p /var/lib/pgsql/pg_backup_uncompressed
@@ -1224,5 +1233,70 @@ Initiate an uncompressed pg_basebackup to a destination directory
 	pg_basebackup -h localhost -p 5432 -U postgres -D/var/lib/pgsql/pg_backup_uncompressed -Ft -Xs -P
 
 Verify that the uncompressed backup has been taken
+------------------
+ls -lrt /var/lib/pgsql/pg_backup_uncompressed
 
+Let''s perform a disaster testing by cleaning up all the datafiles
 
+	psql# show data_directory;
+
+		/var/lib/pgsql/13/data
+
+	$sudo systemctl stop postgresql-13
+	$sudo systemctl status postgresql-13
+	rm -rf /var/lib/pgsql/13/data
+
+Start restoration using backup that was taken previously
+------------------
+
+Since we do not have any tablespace other than the default one, continue with the below untar command.
+
+Restore backup backup
+
+	cd /var/lib/pgsql/pg_backup
+	mkdir -p /var/lib/pgsql/13/data
+	gunzip base.tar.gz
+	tar -xvf base.tar -C /var/lib/pgsql/13/data
+
+Restore wal backup
+
+	cd /var/lib/pgsql/pg_backup
+	gunzip pg_wal.tar.gz
+	mv /var/lib/pgsql/13/data/pg_wal /var/lib/pgsql/13/data/pg_wal_old
+	mkdir -p /var/lib/pgsql/13/data/pg_wal
+	tar -xvf pg_wal.tar -C /var/lib/pgsql/13/data/pg_wal
+
+Restore if any non-default tabs are found
+
+Skip to next step if not feasible
+
+Restore wal backup to the default location
+
+	vi /var/lib/pgsql/13/data/postgresql.conf
+
+	Search for restore_command
+	Uncomment restore_command and add below
+
+	cp /var/lib/pgsql/13/data/pg_wal/%f %p
+
+archive_command | paste here
+
+restore_command = 'cp /var/lib/pgsql/13/backups/pg_wal/%f /var/lib/pgsql/13/data/pg_wal/%p'
+
+Command to use to restore an archive
+
+Try starting the service and verify if everything is working well
+------------------
+	sudo systemctl status postgresql-13
+
+To check the issue during startup of restored PostgreSQL, use this:
+
+	sudo tail -100f /var/log/messages
+	sudo systemctl start PostgreSQL-13
+	chmod 700 "/var/lib/pgsql/13/data"
+
+From here onwards, all logs will be written to the log in the PostgreSQL data_directory
+
+psql
+
+\l
