@@ -1120,5 +1120,50 @@ psql postgres -U postgres
 
 13.Backup and Restore using pg_basebackup ------------------------------------------------------------------------
 
+How to backup and restore using pb_basebackup on the same host
 
+Step-by-step backup and restoration using pb_basebackup
+
+Prerequisites
+-----------------
+EC2 RHEL instance ready with access
+Sample database dvdrental loaded.
+
+psql
+
+postgres# show data_directory
+
+	 data directory
+	---------------------------------
+	/var/lib/pgsql/13/data 
+	(1 row)
+
+postgres#\db+
+		List of tablespaces
+
+	Name		Owner	Location	Access privileges 	Options Size		Description 
+	------		-----	----------	-----------------	-----	---------	------------------
+	pg_default	postgres										1879 MB
+	pg_global	postgres										1583 kB
+
+	(2 rows)
+
+\l+
+
+dvdrental 99+# select name, setting, unit from pg settings where name like 'archive%';
+
+		name					|setting 	|unit
+		----------------		-------		------
+		archive_cleanup_command
+		archive command			(disabled)
+		archive_mode			 off
+		archive timeout			 0			1
+
+dvdrental_99+=# show config_file;
+
+	config file
+	-------------------------------------
+	/var/lib/pgsql/13/data/postgresql.conf
+
+	(1 row)
 
