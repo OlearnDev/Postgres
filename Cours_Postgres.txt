@@ -1527,29 +1527,44 @@ Please note that after a full backup, pgBackRest executes an incremental backup.
 
 [postgres@ip-172-31-10-149 ~]$ pgbackrest info
 
-stanza: Pgems
-	status: ok
-	cipher: none
+	stanza: Pgems
+		status: ok
+		cipher: none
 
-	db (current)
-	wal archive min/max (13): 00000001000000000000001/000000010000000000000005
-	
-	full backup: 20210918-051659F
-		timestamp start/stop: 2021-09-18 05:16:59 / 2021-09-18 05:17:03
-		wal start/stop: 000000010000000000000003 / 00000010000000000000003
-		Database size: 23.3MB, database backup size: 23.3MB
-		Repol: Backup set size: 2.8MB, backup size: 2.8MB
+		db (current)
+		wal archive min/max (13): 00000001000000000000001/000000010000000000000005
+		
+		full backup: 20210918-051659F
+			timestamp start/stop: 2021-09-18 05:16:59 / 2021-09-18 05:17:03
+			wal start/stop: 000000010000000000000003 / 00000010000000000000003
+			Database size: 23.3MB, database backup size: 23.3MB
+			Repol: Backup set size: 2.8MB, backup size: 2.8MB
 
-	Incr backup: 20210918-051659F_20210918-0519371
-		Start/stop timestamp: 2021-09-18 05:19:37 / 2021-09-18 05:19:38
-		Start/stop timestamp: 000000010000000000000005 / 000000010000000000000005
-		Database size: 23.3MB, database backup size: 8.3KB
-		Repol: Backup set size: 2.8MB, backup size: 429B
-		Backup reference list: 20210918-051659F
+		Incr backup: 20210918-051659F_20210918-0519371
+			Start/stop timestamp: 2021-09-18 05:19:37 / 2021-09-18 05:19:38
+			Start/stop timestamp: 000000010000000000000005 / 000000010000000000000005
+			Database size: 23.3MB, database backup size: 8.3KB
+			Repol: Backup set size: 2.8MB, backup size: 429B
+			Backup reference list: 20210918-051659F
 
 [postgres@ip-172-31-10-149~]$
 
+How to restore backup using pgbackrest
+------------------------
 
+	pgBackRest detects
+
+		successful full backup
+		differential backup
+		incremental backup
+		and it does restoration as well.
+
+pgbackrest restore --stanza=Pgems-log-level-console=info
+
+sudo systemctl stop postgresql-13
+pgbackrest info
+
+pgbackrest restore --stanza=Pgems --log-level-console=info --delta
 
 
 		
