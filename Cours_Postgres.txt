@@ -1446,10 +1446,110 @@ as EC2 root
 	sudo chown postgres:postgres /var/log/pgbackrest
 
 Configuration file for pgbackrest
----------
+------------------
 What is Stanza in Postgres?
 	A stanza defines the backup configuration for a specific PostgreSQL database cluster. 
 	Any global configuration sections can be overridden to define stanza-specific settings.
 
-	sudo su postgres sudo mkdir /etc/pgbackrest
+	sudo su postgres sudo 
+	mkdir /etc/pgbackrest
+	
+	sudo bash -c 'cat <<< EOF > /etc/pgbackrest/pgbackrest.conf
+	[global]
+	repo1-path=/var/lib/pgbackrest
+	repo1-retention-full=2				<-- We keep 2 full backups here 
 
+	[Pgems]								<-- Name of the stanza 
+	pg1-path=/var/lib/pgsql/13/data
+	pg1-port=5432
+	EOF'
+
+  cat /etc/pgbackrest/pgbackrest.conf
+  
+  Note: backup repository location = /var/lib/pgbackrest
+
+Creation of the stanza
+------------------
+	su postgres
+	pgbackrest stanza-create --stanza=Pgems --log-level-console=info
+
+Sample PostgreSQL parameter changes required:
+--------------------------------------------
+
+	sudo su Postgres
+	psql#
+
+	alter system set wal_level = 'replica';
+	alter system set archive_mode = 'on';
+	alter system set archive_command = 'pgbackrest --stanza=Pgems archive-push %p';
+	alter system set max_wal_senders = '10';
+	alter system set hot_standby = 'on';
+
+	show wal_level;
+	show archive_mode;
+	show archive_command;
+	show max_wal_senders;
+	show hot_standby;
+	
+	sudo systemctl restart postgresql-13  
+
+Basic backup configuration post-backup verification:
+--------------------------------------------
+	sudo su Postgres
+	pgbackrest check --stanza=Pgems --log-level-console=info
+
+	sudo systemctl restart postgresql-13
+	pgbackrest check --stanza=Pgems --log-level-console=info 
+
+Initiate a Full Backup
+------------------------
+	pgbackrest backup --stanza=Pgems --log-level-console=info
+	
+How to verify backup related information
+------------------------
+	sudo su -postgtres
+	pgbackrest info    (see output below:)
+
+	stanza: pg0app
+		status: ok
+		cipher: none
+		
+		db (current)
+			wal archive min/max (13): 000000010000000000000001/000000010000000000000003
+			
+			full backup: 20210917-095342F
+				timestamp start/stop: 2021-09-17 09:53:42 / 2021-09-17	09:53:48
+				wal start/stop: 000000010000000000000003 / 00000010000000000000003
+
+Please note that after a full backup, pgBackRest executes an incremental backup.
+
+	pgBackrest backup --stanza=Pgems --log-level-console=info
+
+[postgres@ip-172-31-10-149 ~]$ pgbackrest info
+
+stanza: Pgems
+	status: ok
+	cipher: none
+
+	db (current)
+	wal archive min/max (13): 00000001000000000000001/000000010000000000000005
+	
+	full backup: 20210918-051659F
+		timestamp start/stop: 2021-09-18 05:16:59 / 2021-09-18 05:17:03
+		wal start/stop: 000000010000000000000003 / 00000010000000000000003
+		Database size: 23.3MB, database backup size: 23.3MB
+		Repol: Backup set size: 2.8MB, backup size: 2.8MB
+
+	Incr backup: 20210918-051659F_20210918-0519371
+		Start/stop timestamp: 2021-09-18 05:19:37 / 2021-09-18 05:19:38
+		Start/stop timestamp: 000000010000000000000005 / 000000010000000000000005
+		Database size: 23.3MB, database backup size: 8.3KB
+		Repol: Backup set size: 2.8MB, backup size: 429B
+		Backup reference list: 20210918-051659F
+
+[postgres@ip-172-31-10-149~]$
+
+
+
+
+		
