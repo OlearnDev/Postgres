@@ -1684,7 +1684,11 @@ E.g., when you select from a table named "testtable", PostgreSQL searches for th
 in the search path.
 
 	postgres=# show search_path;
-	"$user", public
+	
+		search_path
+		--------------
+		"$user", public    <- it will search this in the user connected schema name, then in public schema
+		(1 row)
 
  - "$user" resolves to the name of the currently logged-in user; by default, no schema exists with that name.
  - Public schema becomes default schema
@@ -1698,7 +1702,11 @@ HOW TO CREATE ROLE
 	CREATE ROLE app_readonly;
 	GRANT CONNECT ON DATABASE dvdrental TO app_readonly;
 	GRANT USAGE ON SCHEMA app_schema TO app_readonly;
-	GRANT SELECT ON TABLE actor, film TO app_readonly;
+	GRANT SELECT ON TABLE actor, film TO app_readonly;  <- film is a table
 	GRANT SELECT ON ALL TABLES IN SCHEMA app_schema TO app_readonly;
 	ALTER DEFAULT PRIVILEGES IN SCHEMA app_schema GRANT SELECT ON TABLES TO app_readonly;
+	
+	NB: GRANT USAGE means "grant the right to use or access a specific object's name." It doesn''t grant 
+	    privileges on the data inside the object, but rather the right to "see" that the object exists and 
+		reference it by name
 	
