@@ -1121,6 +1121,7 @@ psql postgres -U postgres
 13.Backup and Restore using pg_basebackup ------------------------------------------------------------------------
 
 How to backup and restore using pb_basebackup on the same host
+pg_basebackup is used to backup all the cluster and not only a db
 
 Step-by-step backup and restoration using pb_basebackup
 
@@ -1209,9 +1210,29 @@ Initiate a compressed pg basebackup to a destination directory
 
 	pg_basebackup -h localhost -p 5432 -U postgres -D /var/lib/pgsql/pg_backup -Ft -z -Xs -P  <-- local backup
 
-	-F, 	--format=p|t		output format (plain (default), tar)
-	-z, 	gzip				compress tar output
-	-X		--wal-method=none 	fetch stream
+
+	-D,	--pgdata=DIRECTORY				receive base backup into directory
+	-F,	--format=p|t					output format (plain (default), tar)
+	-X,	--xlog							include required WAL files in backup (fetch mode)
+	-X,	--xlog-method=fetch | stream	include required WAL files with specified method    (nb: stream is used for continious shipping for repl)
+	-Z,	--gzip							compress tar output
+	-Z,	--compress=0-9					compress tar output with given compression level  (0: no compress and 9:highest)
+	-l,	--label-LABEL					set backup label
+	-P,	--progress						show progress information
+	-v,	--verbose						output verbose messages
+	-V,	--version						output version information, then exit
+	-?,	--help							show this help, then exit
+
+	-X		--wal-method=none 			fetch stream  ??
+	
+Connection options:
+
+	-h,	--host-HOSTNAME					database server host or socket directory
+	-P,	--port=PORT						database server port number
+	"-s"--status-interval				Time between status packets sent to server (in seconds)
+	-U,	--username=NAME					Connect as specified database user
+	-W,	--no-password					Never prompt for password
+	-W,	--password						Force password prompt (should happen automatically)
 
 	$ pq_basebackup -h localhost -p 5432 -U postgres -D/var/lib/pgsql/pg_backup -Ft-z-Xo -P
 	915653/915653 kB (100%), 1/1 tablespace
@@ -1370,6 +1391,38 @@ S. No. Parameter & Description
 	password******
 
 	postgres# \l
+
+28. pg_basebackup : second partie --------------------------------------**************************************
+
+	postgres
+	postgres=# \du
+	\l
+
+Prerequisites
+--------------
+Role Creation to perform the backup.
+
+	postgres=# CREATE USER replication_user WITH REPLICATION ENCRYPTED PASSWORD 'password';
+
+Adding created user in pg_hba.conf file to allow backup
+
+	echo "host replication replication_user 192.168.1.51/32 md5" >> $PGDATA/pg_hba.conf
+	view $PGDATA/pg_hba.conf
+
+Get the changes into effect through a reload.
+
+	#sudo su postgres
+	$psql -c "select pg_reload_conf()"
+
+To create a base backup of the server at 192.168.1.61 and store it in the local directory /postgres/backup/pgbackup:
+
+	$ pg_basebackup -U replication_user -D /postgres/backup/pgbackup/
+
+To create a backup of the local server with one compressed tar file for each tablespace, and store it in the backup 
+directory, showing a progress report while running:
+
+	$ pg_basebackup -U replication_user -D /postgres/backup/pgbackup/ -Ft-z -P
+	$ pg_basebackup -U replication_user -D /postgres/backup/pgbackup/ -Ft -z -P
 
 22.pgbackrest : PostgreSQL backup and restore --------------------------------------------*******************
 
@@ -1558,12 +1611,14 @@ How to restore backup using pgbackrest
 		differential backup
 		incremental backup
 		and it does restoration as well.
-
-pgbackrest restore --stanza=Pgems-log-level-console=info
+		
+NB: before restoring, postgres should be stopped 
 
 sudo systemctl stop postgresql-13
-pgbackrest info
+sudo systemctl status postgresql-13
 
+pgbackrest restore --stanza=Pgems-log-level-console=info
+pgbackrest info
 pgbackrest restore --stanza=Pgems --log-level-console=info --delta
 
 
