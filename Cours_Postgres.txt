@@ -1817,5 +1817,118 @@ Examples
 	$ pg_dump -t payment dvdrental > /postgres/backup/payment.sql
 
 
+30. Postgresql database migration from one host to another using pg_dumpall-------------------------****************
 
+Prerequisites
+-------------
+	Disable firewall and selinux
+		sudo systemctl stop firewalld
+		sudo systemctl status selinux
+		sudo vi /etc/sysconfig/selinux
+		
+	alter user postgres password 'password';
+	grep listen /var/lib/pgsql/13/data/postgresql.conf 
+	cat /var/lib/pgsql/13/data/pg_hba.conf						<- on source and dest 
+	
+		# TYPE	DATABASE	USER	ADDRESS				METHOD
+		  ...
+		  host	all			all		192.168.1.56/24		md5
 
+Source server Backup Directory and size /postgres/backup/
+Target server Backup Directory and size: /postgres/backup/
+
+Pre-migration phase
+-------------------
+	Source server:linux1 -192.168.1.113 (Postgres version -13)
+	Target server: linux2 -192.168.1.116 (Postgres version -13)
+
+1# Find the size of the database.
+
+	psql
+	/l
+
+Replace dbname with actual database;
+	SELECT pg size_pretty(pg_database_size('dvdrental'));
+
+	1# List databases in PostgreSQL on source.
+
+		psql
+		Postgres# \1
+		or
+		SELECT datname FROM pg_database;
+
+	2# List all schemas on source
+
+		psql
+		Postgres# SELECT nspname FROM pg_catalog.pg_namespace;
+
+	3# Find different types of objects count like table, view, index, sequence on source server
+
+		SELECT n.nspname as schema_name,
+		CASE c.relkind
+			WHEN 'r' THEN 'table'
+			WHEN 'v' THEN 'view'
+			WHEN 'i' THEN 'index'
+			WHEN 'S' THEN 'sequence'
+			WHEN 's' THEN 'special'
+		END as object_type,
+		count(1) as object_count
+		FROM pg_catalog.pg_class c
+		LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+		WHERE c.relkind IN ('r', 'v', 'i', 'S', 's')
+		GROUP BY n.nspname,
+		CASE c.relkind
+			WHEN 'r' THEN 'table'
+			WHEN 'v' THEN 'view'
+			WHEN 'i' THEN 'index'
+			WHEN 'S' THEN 'sequence'
+			WHEN 's' THEN 'special'
+		END
+		ORDER BY n.nspname,
+		CASE c.relkind
+			WHEN 'r' THEN 'table'
+			WHEN 'v' THEN 'view'
+			WHEN 'i' THEN 'index'
+			WHEN 'S' THEN 'sequence'
+			WHEN 's' THEN 'special'
+		END;
+
+4 # Listing users using SQL statement
+-----------------------------------
+
+	SELECT usename AS role_name,
+	CASE
+		WHEN usesuper AND usecreatedb THEN
+			CAST('superuser, create database' AS pg_catalog.text)
+		WHEN usesuper THEN
+			CAST('superuser' AS pg_catalog.text)
+		WHEN usecreatedb THEN
+			CAST('create database' AS pg_catalog.text)
+		ELSE
+			CAST( AS pg_catalog.text)
+	END role_attributes
+	FROM pg_catalog.pg_user
+	ORDER BY role_name desc;
+
+5# Find all extensions installed.
+--------------------------------
+	SELECT * FROM pg_available_extensions;
+
+Migration phase
+-----------
+
+6 # Backup all databases.
+
+	pg_dumpall > /postgres/backup/all.sql
+
+7 # Transfer the dump from source to target. 
+
+	Log in to the source server as postgres and transfer
+s
+	scp db_all.sql postgres@192.168.1.116:/postgres/backup   <- create dest folder /postgres/backup
+
+8 # Import the dump file into the target server
+
+		psql < /postgres/backup/all.sql
+
+NB: You will need to manually create some objects like extensions (pg_cron ...)	
