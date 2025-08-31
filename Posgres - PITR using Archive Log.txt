@@ -1,0 +1,91 @@
+---------- Posgres: PITR using Archive Log  ---------------
+
+[root@centos-postgres-pitr ~]# su postgres
+
+bash-4.2$ psql
+	psql (12.18)
+
+postgres=#
+
+sudo yum install postgresql12-server
+sudo /usr/pgsql-12/bin/postgresql-12-setup initdb
+sudo systemctl start postgresql-12
+sudo systemctl enable postgresql-12
+
+sudo -u postgres mkdir basebackup
+sudo -u postgres mkdir wal_archive
+
+$vi $PGDATA\posgresql.conf
+
+	wal_Level -replica or archive
+	archive_mode=on
+	archive_command= 'cp-1 p/var/lib/pgsql/12/wal_archive/f'  <- continious copy archive files in this archive folder
+	archive_timeout 60
+
+--- Normal recovery
+
+Performing full backup
+	sudo u postgres psql -c "SELECT pg_switch_wal();"
+	sudo u postgres pg_basebackup -D/var/lib/pgsql/12/basebackup -Ft-z -P -Xs
+	sudo u postgres pg_basebackup -D /var/lib/pgsql/12/basebackup Ft -P
+	
+	NB: A full back file (base.tar) and archive backup file (pg_wal.tar) are generated in basebackup
+
+Clean $PGDATA folder 
+	rm -rf /var/lib/pgsql/12/data/*								                     */
+
+Create new pg_wal folder
+	sudo -u postgres mkdir /var/lib/pgsql/12/data/pg_wal
+
+restoration:
+
+	tar -xvf /var/lib/pgsql/12/basebackup/base.tar -C /var/lib/pgsql/12/data/
+	tar -xvf /var/lib/pgsql/12/basebackup/pg_wal.tar -C /var/lib/pgsql/12/data/pg_wal
+
+Restore_command 'cp /var/lib/pgsql/12/wal_archive/%f \p'  <- It is the reverse of archive_command
+
+----  PITR --------------------------------- 
+
+	create database test_dbl;
+
+T
+
+	\c test_abl;
+	create table test_tbll (id int, name varchar(255));
+	insert into test_tbll
+	SELECT generate_series(1,10) AS id, md5(random()::text) AS descr;
+	select count(1) from test_tbll; 10
+	select now();
+	SELECT pg_switch_wal();
+
+rm -rf /var/lib/pgsql/12/basebackup/
+
+sudo u postgres pg_basebackup -D/var/lib/pgsql/12/basebackup Ft -P
+
+\c test_dbl;
+
+insert into test_tbll
+
+SELECT generate_series(1,10) AS id, md5(random()::text) AS descr;
+
+select count(1) from test_tbll; /* 20 */
+
+select now(); /* restore point 2021-09-23 09:49:00.0 */
+
+insert into test_tbil
+
+SELECT generate_series(1,10) AS id, md5 (random()::text) AS descr;
+
+select count (1) from test_tbil; /* 30 recorded */
+
+select now();
+
+sudo systemctl stop postgresql-12
+
+rm -rf /var/lib/pgsql/12/data/*											*/
+
+sudo -u postgres mkdir /var/lib/pgsql/12/data/pg_wal
+
+tar -xvf /var/lib/pgsql/12/basebackup/base.tar -C /var/lib/pgsql/12/data/
+No need to restore wall file
+2021-09-23 09:36:21
