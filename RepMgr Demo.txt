@@ -135,7 +135,7 @@ vi /var/lib/pgsql/repmgr.conf
 
 -bash-4.2$ cat /var/lib/pgsql/repmgr.conf
 
-	cluster 'failovertesting'
+	cluster='failovertesting'
 	node_id=1
 	node_name=ec2-13-234-29-87.ap-south-1.compute.amazonaws.com
 	conninfo='host=ec2-13-234-29-87.ap-south-1.compute.amazonaws.com user=repmgr dbname=repmgr connect_timeout=2'
@@ -146,4 +146,116 @@ vi /var/lib/pgsql/repmgr.conf
 
 -bash-4.2$
 
-Step 7: Register the primary server
+Step 7: Register the primary server (On primary)
+
+	sudo systemctl restart postgresql-12
+	
+	postgres$ /usr/pgsql-12/bin/repmgr -f /var/lib/pgsql/repmgr.conf primary register
+
+Note: You can face an error if the public IP "172.31.4.133" is not in hba.conf file
+
+	host	repmgr	repmgr	172.31.4.133/24	trust
+
+Restart and try to register again:
+
+	sudo systemctl restart postgresql-12
+
+    $ /usr/pgsql-12/bin/repmgr -f /var/lib/pgsql/repmgr.conf primary register
+
+	WARNING: The following problems were found in the configuration file:
+	Parameter "cluster" is deprecated and will be ignored
+
+Verify with :
+
+	-bash-4.2$ /usr/pgsql-12/bin/repmgr -f /var/lib/pgsql/repmgr.conf cluster show
+
+	WARNING: The following problems were found in the configuration file:
+
+	Parameter "cluster" is deprecated and will be ignored
+
+	ID |Name											  | Role   |Status |Upstream |Location |Priority |Timeline |
+
+	1 	ec2-13-235-9-230.ap-south-1.compute.amazonaws.com |primary | *running |      | default |100      |1
+
+Step 8: It''s time to clone the standby server (On Standby)
+------------------------------------------------
+Create and edit repmgr.conf file on standby host.
+
+sudo vi /etc/sudoers
+	postgres	ALL=(ALL)	NOPASSWD: ALL
+
+sudo su postgres
+vi /var/lib/pgsql/repmgr.conf
+
+	node_id=2
+	node_name=ec2-65-2-80-52.ap-south-1.compute.amazonaws.com     <-- Node 2 name
+	conninfo='host=ec2-65-2-80-52.ap-south-1.compute.amazonaws.com user=repmgr dbname=repmgr connect_timeout=2'
+	data_directory='/var/lib/pgsql/12/data'
+	failover=automatic
+    promote_command='/usr/pgsql-12/bin/repmgr standby promote -f /var/lib/pgsql/repmgr.conf --log-to-file'
+	follow_command='/usr/pgsql-12/bin/repmgr standby follow -f /var/lib/pgsql/repmgr.conf --log-to-file --upstream-node-id=%n'
+	
+172.31.10.131
+ensure hba.conf has standby details for replication and repmgr:
+
+	host	replication	repmgr	172.31.10.131/24	trust
+	host	repmgr	repmgr	172.31.10.131/24	trust
+
+sudo su - postgres
+
+/usr/pgsql-12/bin/repmgr -h ec2-13-234-29-87.ap-south-1.compute.amazonaws.com -U repmgr -d repmgr -f /var/lib/pgsql/repmgr.conf standby clone --dry-run 
+
+NB: in the syntax above, repmg picks detals from -h [primary hostname]
+
+-bash-4.2$ /usr/pgsql-12/bin/repmgr -h ec2-13-235-9-230.ap-south-1.compute.amazonaws.com -U repmgr -d repmgr -f /var/lib/pgsql/repmgr.conf standby clone 
+
+pg_basebackup -1 "repmgr base backup" -D /var/lib/pgsql/12/data -h ec2-65-1-84-60.ap-south-1.compute.amazonaws.com -p 5432 -U repmgr -X stream
+	......
+	Notice: Standby clone (using pg_basebackup) complete
+	Notice: You can now start your PostgreSQL server
+	Hint: For example: pg_ctl -D /var/lib/pgsql/12/data start
+	Hint: After starting the server, you need to register this standby with "repmgr standby register"
+
+-bash-4.2$-bash-4.2$ cd /var/lib/pgsql/12/data
+-bash-4.2$ ls 
+
+backup_label current_logfiles	global	pg_commit_ts	pg_dynshmem	pg_ident.conf	pg_logical	pg_notify	
+pg_replslot pg_stat	pg_snapshots	pg_subtrans	pg_tblspc	PG_VERSION	pg_wal	postgresql.conf	postgresql.auto.conf
+
+Edit postgresql.conf and edit the listen address of the standby server
+
+172.31.10.131
+
+Start the cluster
+
+	sudo systemctl enable postgresql-12
+	sudo systemctl status postgresql-12
+	sudo systemctl start postgresql-12
+	sudo systemctl status postgresql-12
+
+Step 9: Register the standby server
+----------------------------------------
+
+	sudo su - postgres
+	$/usr/pgsql-12/bin/repmgr -f /var/lib/pgsql/repmgr.conf standby register
+
+/usr/pgsql-12/bin/repmgr -f /var/lib/pgsql/repmgr.conf cluster show
+
+-bash-4.2$ /usr/pgsql-12/bin/repmgr -f /var/lib/pgsql/repmgr.conf cluster show
+
+ID	Name												| Role	 | Status	| Upstream
+1	ec2-13-235-9-230.ap-south-1.compute.amazonaws.com 	|primary |* running |
+2	ec2-35-154-64-90.ap-south-1.compute.amazonaws.com 	|standby |running   |ec2-13-235-9-230.ap-south-1.compute.amazonaw
+
+
+Step 10: Start the repmgrd process on the master and slave hosts
+----------------------------------------------------------------
+master
+	/usr/pgsql-12/bin/repmgrd -f /var/lib/pgsql/repmgr.conf
+
+slave
+	/usr/pgsql-12/bin/repmgrd -f /var/lib/pgsql/repmgr.conf
+
+Check events: 
+
+/usr/pgsql-12/bin/repmgr -f /var/lib/pgsql/repmgr.conf cluster event

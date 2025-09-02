@@ -588,7 +588,7 @@ PostgreSQL is a widely used relational database that supports both logical and p
  changes to the primary are replicated
 
 
-Overview of REPMGR ****************************
+Overview of REPMGR ------------------------------****************************
 
 repmgr is an open-source tool for managing replication and failover of PostgreSQL servers.
 It supports and enhances PostgreSQL''s built-in streaming replication which provides a single read/write 
@@ -867,7 +867,7 @@ Check the node is registered by executing repmgr cluster show on the standby:
 
 Both nodes are now registered with repmgr and the records have been copied to the standby server.
 
-Demo pending ...coming ASAP
+Demo -> Check separate file for demo repmgr
 
 9.PSQL CHEATSHEET.  [Usual commands]-------------------------------------------------------------------------------
 
