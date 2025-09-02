@@ -1,0 +1,149 @@
+---------- REPMGR DEMO ----------------------------
+Step 1: Install PostgreSQL
+
+On Primary
+	-RHEL-7.7_HVM-20191028-x86_64-1-Hourly2-GP2 -ami-0025cb7094e63c0c0
+
+	sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86
+
+	sudo yum -y install epel-release yum-utils
+	sudo yum-config-manager-enable pgdg12
+	sudo yum install postgresql12-server postgresql12
+
+Following steps should not be done on standby to initiate db. Standby will pick data from primary:
+
+	sudo /usr/pgsql-12/bin/postgresql-12-set initdb  
+	sudo systemctl enable postgresql-12
+	sudo systemctl status postgresql-12
+	sudo systemctl start postgresql-12
+	
+	sudo vi /etc/sudoers   <-- Edit file and add lines below to grant sudo privs to postgres user
+
+		postgres 	ALL=(ALL)	NOPASSWD: ALL
+
+	sudo su postgres
+
+Standby Installation and configuration 
+	-RHEL-7.7_HVM-20191028-x86_64-1-Hourly2-GP2 ami-0025cb7094e63c0c0 **
+
+	sudo yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86 64/pgdg-redhat-repo-latest.noarch.rpm
+
+	sudo yum -y install epel-release yum-utils
+	sudo yum-config-manager-enable pgdg12
+	sudo yum install postgresql12-server postgresql12
+
+	sudo vi /etc/sudoers   <-- Edit file and add lines below
+
+		postgres 	ALL=(ALL)	NOPASSWD: ALL
+	
+Step 2) Install repmgr on master and slave as ec2-user
+-----------------------------------------------------
+
+ec2-user $ sudo yum -y install repmgr12*
+
+Step 3: Configure master PostgreSQL
+---------------------------------------------
+The following replication settings may need to be updated for replication:
+
+vi /var/lib/pgsql/12/data/postgresql.conf
+
+	shared_preload_libraries = 'repmgr'
+	max_wal_senders = 10
+	max_replication_slots = 10
+	wal_level = 'hot_standby' or 'replica' or 'logical' (any of 3)
+	hot_standby = on
+	archive_mode = on
+	archive_command = '/bin/true'
+	listen_addresses = '*'             <- NB: failed to restart instance with '65.1.84.60' socket could not be created
+										-- msg error found in /var/log/messages. Check also $PGDATA/log/*.log file 
+sudo su postgres
+
+postgres$
+
+vi /var/lib/pgsql/12/data/postgresql.conf
+
+	sudo systemctl restart postgresql-12
+
+	psql
+
+	show shared_preload_libraries;
+	show max_wal_senders;
+	show max_replication_slots;
+	show wal_level;
+	show hot_standby;
+	show archive_mode;
+	show archive_command;
+
+Step 4: Create repmgr replication users.
+
+Create a superuser account and a database for the repmgr metadata:
+
+sudo su -postgres
+
+psql
+
+create user repmgr;
+create database repmgr with owner repmgr;
+ALTER USER repmgr WITH SUPERUSER;
+
+\du
+
+Step 5: Configure pg_hba.conf
+
+vi /var/lib/pgsql/12/data/pg_hba.conf
+
+	local	replication	repmgr					trust
+	host	replication	repmgr	127.0.0.1/32	trust
+	host	replication	repmgr	192.168.1.0/24	trust
+
+	local	repmgr		repmgr					trust
+	host	repmgr		repmgr	127.0.0.1/32	trust
+	host	repmgr		repmgr	192.168.1.0/24	trust
+
+	host replication repuser Master_IP/32 MD5
+	host replication repuser Slave_IP/32 MD5
+	host all postgres master_ip/32 Trust
+	host all postgres Slave_IP/32 Trust
+
+	local	replication	repmgr					trust
+	host	replication	repmgr	127.0.0.1/32	trust
+	host	replication	repmgr	13.234.29.87/24	trust
+	host	replication	repmgr	65.2.80.52/24	trust
+
+	local	repmgr		repmgr					trust
+	host	repmgr		repmgr	127.0.0.1/32	trust
+	host	repmgr		repmgr	13.234.29.87/24	trust
+	host	repmgr		repmgr	65.2.80.52/24	trust
+
+
+13.234.29.87 -P ec2-13-234-29-87.ap-south-1.compute.amazonaws.com
+65.2.80.52	 -S ec2-65-2-80-52.ap-south-1.compute.amazonaws.com
+
+--------ec2 with public ip 
+Primary ec2-65-1-84-60.ap-south-1.compute.amazonaws.com 65.1.84.60
+Standby ec2-13-127-244-174.ap-south-1.compute.amazonaws.com 13.127.244.174
+
+Known error
+---------------
+FATAL: no pg_hba.conf entry for host "172.31.46.85", user "repmgr", database "repmgr", SSL off
+
+DETAIL: Attempted to connect using:
+
+Step 6: Configure the repmgr.conf on the master
+------------------------------------------------
+vi /var/lib/pgsql/repmgr.conf
+
+-bash-4.2$ cat /var/lib/pgsql/repmgr.conf
+
+	cluster 'failovertesting'
+	node_id=1
+	node_name=ec2-13-234-29-87.ap-south-1.compute.amazonaws.com
+	conninfo='host=ec2-13-234-29-87.ap-south-1.compute.amazonaws.com user=repmgr dbname=repmgr connect_timeout=2'
+	data_directory='/var/lib/pgsql/12/data/'
+	failover=automatic
+	promote_command='/usr/pgsql-12/bin/repmgr standby promote -f /var/lib/pgsql/repmgr.conf --log-to-file'
+	follow_command='/usr/pgsql-12/bin/repmgr standby follow -f /var/lib/pgsql/repmgr.conf --log-to-file --upstream-node-id=%n'
+
+-bash-4.2$
+
+Step 7: Register the primary server

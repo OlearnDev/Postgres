@@ -621,7 +621,7 @@ initializing a Repmgr-administered cluster (Repmgr primary register) and contain
 Tables :
 
 	Repmgr.events: Records events of interest
-	Repmgr.nodes: Connection and status information for all hosts of the cluster.
+	Repmgr.nodes : Connection and status information for all hosts of the cluster.
 	Repmgr.monitoring_history: Historical standby monitoring information.
 
 Views :
@@ -657,7 +657,7 @@ sudo yum install repmgri1
 Prerequisites for setting up a basic replication cluster with repmgr
 -----------
 We''ll assume the
-	primary is called node with IP address 192.168.1.51
+	primary is called node  with IP address 192.168.1.51
 	standby is called node2 with IP address 192.168.1.61
 
 	Following software must be installed on both servers:
@@ -803,7 +803,7 @@ accordingly, e.g.:
 
 Use the -dry-run option to check the standby can be cloned:
 
-	$ repmgr -h node1 U repmgr -d repmgr -f /etc/repmgr.conf standby clone --dry-run
+	$ repmgr -h node1 -U repmgr -d repmgr -f /etc/repmgr.conf standby clone --dry-run
 
 	NOTICE: using the provided configuration file "/etc/repmgr.conf"
 	NOTICE: destination directory "/var/lib/postgresql/data" provided
@@ -814,7 +814,7 @@ Use the -dry-run option to check the standby can be cloned:
 	HINT: Consider using the -c/--fast-checkpoint option
 	INFO: All prerequisites for "standby clone" are met
 
-	$ repmgr -h node1 U repmgr -d repmgr -f /etc/repmgr.conf standby clone  //run effectiveliy
+	$ repmgr -h node1 -U repmgr -d repmgr -f /etc/repmgr.conf standby clone  //run effectiveliy
 
 This has cloned the PostgreSQL data directory files from the primary node 1 using PostgreSQL''s pg_basebackup utility.
 A recovery.conf file containing the correct parameters to start streaming from this primary server will be created 
@@ -822,7 +822,7 @@ automatically.
 
 Note
 ------
-By default, any config files in the primary''s data directory will be copied to the standby.Typically, these will be
+By default, any config files in the primary''s data directory will be copied to the standby. Typically, these will be
 
 	postgresql.conf,
 	postgresql.auto.conf,
@@ -1013,7 +1013,7 @@ How to stop a Docker container.
 	sudo docker stop container_id
 
 
-12.PostgreSQL internat authentication -------------------------------------------------------------------------------
+12.PostgreSQL internal authentication -------------------------------------------------------------------------------
 
 PostgreSQL manages internal authentication mechanisms as mentioned in the pg_hba.conf file
 
