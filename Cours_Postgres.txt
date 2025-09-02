@@ -1932,3 +1932,255 @@ s
 		psql < /postgres/backup/all.sql
 
 NB: You will need to manually create some objects like extensions (pg_cron ...)	
+
+
+45.How to Set Up Continuous Archiving and Perform PITR with PostgreSQL 13---------------****************************
+
+What is WAL in Postgres?
+  - Write-Ahead Logging (WAL) is a standard method for ensuring data integrity.	
+  - Using WAL results in a significantly reduced number of disk writes, because only the log file needs to be flushed
+	  to disk to guarantee that a transaction is committed, rather than every data file changed by the transaction.
+
+Does Postgres have a transaction log?
+  - In PostgreSQL, it is also known as a transaction log.
+  - A log is a record of all the events or changes, and WAL data is just a description of changes made to the actual 
+    data.
+  - Using the Postgres WAL entries, you can restore the database back to its state at any previous point in time.
+
+Where are Postgres WAL files?
+  - WAL logs are stored in the pg_wal directory under the data directory, as a set of segment files, each normally 
+    16 MB in size (but the size can be changed by altering the --with-wal-segsize configure option when building 
+	the server).
+
+What are WAL files used for?
+  - The write-ahead log or "wal" file is a roll-forward journal that records transactions that have been committed 
+    but not yet applied to the main database.
+  - Details on the format of the wal file are described in the WAL format subsection of the main file format document.
+
+What is Pg_wal in PostgreSQL?
+  - pg_wal holds WAL files for the archiver to archive, and if you don''t delete them, this will result in a disk 
+    full issue.
+  - Once archiving is set up properly, start PostgreSQL (pg_ctl start -D data_directory), and PostgreSQL will 
+    automatically start catching up.
+
+Prerequisites
+-------------
+
+Step 1) Set up two RHEL_EC2 instances running PostgreSQL-13.
+---------------------------------------------------------
+Step 1-a) Launch 2-EC2 with RHEL8.  
+		Download and convert keys from pem to ppk format, save on your system.
+		C:\VM\aws temp keys
+	
+Step 1-b) Connect using a local Putty session.
+		Log in as ec2-user using the private keys.
+		Disable selinux or firewall
+		sudo su -
+		# sestatus
+		sudo cat /etc/selinux/config grep i enforcing
+
+		cd /etc/selinux/
+		sudo sed 's/enforcing/disabled/' config
+		sestatus
+		sudo reboot
+		# sestatus
+
+Step 1-c) Download and configure the postgresq113 on a Linux Ec2 instance
+
+	sudo dnf install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86 64/pgdg-redhat-repo-latest.noarch.rpm
+	sudo dnf qy module disable postgresql
+	sudo dnf install -y postgresql13-server
+	sudo /usr/pgsql-13/bin/postgresql-13-setup initdb
+	sudo systemctl enable postgresql-13
+	sudo systemctl start postgresql-13
+
+Step 1-d) Enable remote access of postgres-13 running on an Ec2 instance
+
+Verify the postgresql conf file if the listen address has an IP address other than localhost
+
+	sudo grep listen /var/lib/pgsql/13/data/postgresql.conf
+
+	sudo su postgres
+	psql
+	alter system set listen_addresses='*';
+	alter user postgres password 'password';
+	\q
+
+  enable sudo access to postgres
+	sudo vi /etc/sudoers
+	/NOPASSWD
+
+	postgres	ALL=(ALL)	NOPASSWD: ALL
+
+	sudo reboot
+
+Verify if the pg_hba.conf allows a list of IP addresses to access it remotely
+
+vi /var/lib/pgsql/13/data/pg_hba.conf
+
+	host 	all		all		192.168.37.130/24	md5
+	host	all		all		172.31.40.56/24		md5
+	host	all		all		192.168.1.72/24		md5
+	host	all		all		171.61.89.174/32	md5
+
+Restart postgres to ensure that changes are reflected
+
+	sudo systemctl restart postgresql-13
+	sudo systemctl status postgresql-13
+	psql$ alter user postgres password 'password';
+
+Step 2) Configure Continuous Archiving on Postgres Cluster
+---------------------------------------------------------
+
+Overview
+
+	Configure your PostgreSQL-13 cluster to archive the WAL files in a directory different from the default data 
+	directory.
+	You must create a directory to move it there.
+
+	$ mkdir -p /var/lib/pgsql/13/data/pg13_archive
+
+Edit postgresql.conf in the default data directory and uncomment it, making it available.
+
+	postgres=# show config_file;
+
+	config_file
+	---------------
+	/var/lib/pgsql/13/data/postgresql.conf
+
+archive_mode = on
+archive_command = 'test! -f /var/lib/pgsql/13/data/pg13_archive/%f && cp %p /var/lib/pgsql/13/data/pg13_archive/%f'
+wal level = replica
+
+Note1: The archive command here first checks to see if the WAL file already exists in the archive, and if it doesn''t.
+Note2: Configure the wal_level variable. wal_level dictates how much information PostgreSQL writes to the log. For
+Note3: This is already the default value in postgresql-13.
+
+	sudo systemctl restart postgresql-13
+	psql
+	show archive_mode;
+	show archive_command;
+	show wal_level;
+
+Note: By default, the WAL file is 16MB. Postgresql will archive every WAL file once it is full
+      Force switch of WAL: Force the PostgreSQL database to change and archive the current WAL file by running the 
+	  following command.
+		SELECT pg_switch_wal();
+
+Now we can see the archiving happening, so proceed with the base backup of PostgreSQL13
+
+Step 3) Initiate a physical backup of the postgresql13
+--------------------------------------
+For postgresql PITR, you must take a physical backup of the postgresql cluster.
+Ensure to have a copy of all the database files in the postgresql13 data directory location.
+
+	postgres=# show data_directory;
+	data_directory
+	/var/lib/pgsql/13/data
+	  (1 row)
+
+	mkdir -p /var/lib/pgsql/13/data/pg13_backup
+
+Initiate a pg_basebackup
+---------------	
+
+	pg_basebackup -D /var/lib/pgsql/13/data/pg13_backup
+
+Step 4 Test postgresg113 Point-In-Time-Recovery
+--------------------------------------
+
+Prerequisites:
+	Latest physical backup of the PostgreSQL cluster using pg_basebackup
+	Enable archiving the WAL files to a non-default location so that you can now perform PITR.
+	If you have to restore & rollback the PostgreSQL13 to a previous time.
+	
+Stop PostgreSQL cluster:
+		sudo systemctl stop postgresql-13
+
+Rename data directory of PostgreSQL cluster 
+
+	cp /var/lib/pgsql/13/data/pg_wal /var/lib/pgsql/13/data/pg13_backup
+	mv /var/lib/pgsql/13/data/ /var/lib/pgsql/13/data_old
+	ls -ld /var/lib/pgsql/13/data/
+	mkdir -p /var/lib/pgsql/13/data/
+	cd /var/lib/pgsql/13/data/
+	ls
+
+It must be empty
+
+Restoration using cp command
+
+Restore all the files from the pg_basebackup performed earliest to the new empty data directory /var/lib/pgsql/13/data/. You can do this with cp:
+
+	postgres$ cp -a /var/lib/pgsql/13/data_old/pg13_backup/. /var/lib/pgsql/13/data/
+
+	Ensure owner is postgres:postgres and permission must be 700
+
+		ls -ld /var/lib/pgsql/13/data/
+
+	Verify permission on the data directory of postgresql.
+
+		chmod 700 /var/lib/pgsql/13/data/
+
+WAL Note:
+The WAL files in the pg_wal directory restored from the pg_basebackup backup are old and not usable.
+Replace them with the WAL files in the pg_wal directory that you copied before you emptied out the PostgreSQL data 
+ directory.
+
+	cd /var/lib/pgsql/13/data/pg_wal
+	rm -rf *
+
+Now restore the WAL that you saved before the backup.
+
+Now copy the files from the pg_wal directory you saved before clearing out the data directory:
+
+	cp -a /var/lib/pgsql/13/data_old/pg_wal /var/lib/pgsql/13/data/pg_wal
+	cp /var/lib/pgsql/13/data_old/pg13_archive /var/lib/pgsql/13/data/pg_wal
+
+Note: To configure the recovery settings to ensure that PostgreSQL recovers required WAL files.
+The recovery settings can be found in that postgresql.conf.
+
+vi /var/lib/pgsql/13/data/postgresql.conf
+
+Search for restore_command and uncomment and replace /path/to/database_archive with the location mentioned earlier.
+
+	#restore_command =
+
+Example
+
+	restore_command = 'cp /var/lib/pgsql/13/data/pg13_archive/%f %p'
+
+Option to specify a recovery target.
+This is the point that the database cluster will try to recover to before leaving recovery mode.
+The recovery target can be:
+	- a timestamp
+	- transaction ID
+	- log sequence number
+	- the name of a restore point created with the pg_create_restore_point() command or whenever the database reaches 
+	  a consistent state.
+
+If no recovery target is specified, the database cluster will read through the entire log of WAL files in the archive.
+
+#recovery_target =					# 'immediate' to end recovery as soon as a
+									# consistent state is reached
+									# (change requires restart)
+
+
+	Before starting PostgreSQL, prepare PostgreSQL to start in recovery mode.
+	Create an empty file in the PostgreSQL data directory called recovery.signal.
+
+	To create an empty file in the data directory, use the touch command below.
+
+	sudo touch /var/lib/pgsql/13/data/recovery.signal
+
+Now try starting the PostgreSQL 13 cluster using the following command.
+
+	sudo systemctl status postgresql-13
+	sudo systemctl start postgresql-13
+	sudo systemctl status postgresql-13
+
+Note: Ensure to put valid permission on the data directory and restore pg_wal and pg13_archive back to their 
+     original location when the backup was taken
+
+
+
