@@ -1,4 +1,4 @@
----------- Posgres: PITR using Archive Log  ---------------
+---------- Posgres: PITR using Archive Log  ---------------   
 
 [root@centos-postgres-pitr ~]# su postgres
 
