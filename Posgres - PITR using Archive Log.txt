@@ -12,17 +12,41 @@ sudo /usr/pgsql-12/bin/postgresql-12-setup initdb
 sudo systemctl start postgresql-12
 sudo systemctl enable postgresql-12
 
-sudo -u postgres mkdir basebackup
-sudo -u postgres mkdir wal_archive
+sudo -u postgres mkdir basebackup		<- full backup dest 
+sudo -u postgres mkdir wal_archive		<- dest for continious wal archive files 
 
 $vi $PGDATA\posgresql.conf
 
 	wal_Level -replica or archive
 	archive_mode=on
-	archive_command= 'cp-1 p/var/lib/pgsql/12/wal_archive/f'  <- continious copy archive files in this archive folder
-	archive_timeout 60
+	archive_command= 'cp -i %p /var/lib/pgsql/12/wal_archive/%f'  <- continious copy archive files in this archive folder
+	archive_timeout=60											<- forces archive file to be generated every 60s or 1mn (choos larger in prod)
 
---- Normal recovery
+$sudo systemctl restart postgresql-12
+
+NB: In the archive_command: 
+ 
+	-i: The "interactive" flag for cp. It prompts for confirmation before overwriting an existing file in the dest.
+		-> Not a good practice because the archiver process can gets stuck waiting for input from a prompt 
+	
+	%p: This is a PostgreSQL placeholder. It is replaced with the full absolute path to the WAL file that needs to be 
+	    archived (e.g., /var/lib/pgsql/12/data/pg_wal/0000000100000001000000AB).
+	
+	%f: This is another PostgreSQL placeholder. It is replaced with just the filename of the WAL file 
+	   (e.g., 0000000100000001000000AB).
+	   
+You can test archiving is working:
+
+	postgres=#SELECT pg_switch_wal();
+	
+	[root@centos-postgres-pitr 12]# cd wal_archive/
+	[root@centos-postgres-pitr wal_archive]# ll
+	total 16384
+	-rw-----1 postgres postgres 16777216 Sep 23 11:00 000000010000000000000001
+
+	   
+Normal recovery
+--------------------
 
 Performing full backup
 	sudo u postgres psql -c "SELECT pg_switch_wal();"
@@ -44,48 +68,108 @@ restoration:
 
 Restore_command 'cp /var/lib/pgsql/12/wal_archive/%f \p'  <- It is the reverse of archive_command
 
-----  PITR --------------------------------- 
+----  Demo PITR --------------------------------- 
 
 	create database test_dbl;
-
-T
 
 	\c test_abl;
 	create table test_tbll (id int, name varchar(255));
 	insert into test_tbll
 	SELECT generate_series(1,10) AS id, md5(random()::text) AS descr;
-	select count(1) from test_tbll; 10
+	
+	select count(1) from test_tbll; 
+		count()
+		-------
+		10
+	
 	select now();
 	SELECT pg_switch_wal();
 
-rm -rf /var/lib/pgsql/12/basebackup/
+	rm -rf /var/lib/pgsql/12/basebackup/
 
-sudo u postgres pg_basebackup -D/var/lib/pgsql/12/basebackup Ft -P
+	sudo u postgres pg_basebackup -D /var/lib/pgsql/12/basebackup Ft -P
 
-\c test_dbl;
+	[root@centos-postgres-pitr wal_archive]#ll
+	total 65540
+	-rw-----1	postgres postgres 16777216	Sep 23 11:00 000000010000000000000001
+	-rw-----1	postgres postgres 16777216	Sep 23 11:00 000000010000000000000002
+	-rw-----1	postgres postgres 16777216	Sep 23 11:00 000000010000000000000003
+	-rw-----1	postgres postgres 16777216	Sep 23 11:00 000000010000000000000004
+	-rw-----1	postgres postgres      337	Sep 23 11:00 000000010000000000000004.00000028.backup  <- full backup point
 
-insert into test_tbll
+	NB: The .backup file is to orchestrate recovery by marking a specific starting point in the continuous stream 
+	   of WAL files
 
-SELECT generate_series(1,10) AS id, md5(random()::text) AS descr;
+	[root@centos-postgres-pitr basebackup] # ll
+	Total 49912
+	-rw-----1 postgres postgres 34326528  Sep 23 11:02	base.tar
+	-rw-----1 postgres postgres 16778752  Sep 23 11:02	pg_wal.tar		<- used for pitr
 
-select count(1) from test_tbll; /* 20 */
+	[root@centos-postgres-pitr basebackup] #
 
-select now(); /* restore point 2021-09-23 09:49:00.0 */
+	\c test_dbl;
+	insert into test_tbll
+	SELECT generate_series(1,10) AS id, md5(random()::text) AS descr;
 
-insert into test_tbil
+	select count(1) from test_tbll; /* 20 */
+	select now(); /* restore point 2021-09-23 09:49:00.0 */
+	insert into test_tbil
+	SELECT generate_series(1,10) AS id, md5 (random()::text) AS descr;
+	select count (1) from test_tbil; /* 30 recorded */
+	select now();
 
-SELECT generate_series(1,10) AS id, md5 (random()::text) AS descr;
+	sudo systemctl stop postgresql-12
+	
+	rm -rf /var/lib/pgsql/12/data/*											*/
+	sudo -u postgres mkdir /var/lib/pgsql/12/data/pg_wal
+	
+	tar -xvf /var/lib/pgsql/12/basebackup/base.tar -C /var/lib/pgsql/12/data/
+	
+	No need to restore wall file
+	2021-09-23 09:36:21
+	
+	tar -xvf /var/lib/pgsql/12/basebackup/base.tar -C /var/lib/pgsql/12/data/
+	
+	Create a recovery.signal within 2 lines below. Also modify values for these 2 params in $PGDATA\postgres.conf 
+	NB: The presence of the file in $PGDATA indicates a recovery in progress:
+	
+	$sudo -u postgres vi /var/lib/pgsql/12/data/recovery.signal
+		restore_command = 'cp /var/lib/pgsql/12/wal_archive/%f %p'  <- reverse copy from wal archive to wal log file  
+		recovery_target_time = '2021-09-23 11:03:25'				<- recovers to when count was 20
+	
+	#cd data/log/
+	#ll
+	total 4
+	-rw---1 postgres postgres 2055 Sep 23 11:09 postgresql-Thu.log
+	
+	#tail -20 postgresql-Thu.log
+	...
+	2021-09-23 11:09:03.416 UTC [1914] LOG: Starting point-in-time recovery to 2021-09-23 11:03:25+00 restored log file 
+	2021-09-23 11:09:03.431 UTC [1914] LOG: "000000010000000000000004" from archive
+	2021-09-23 11:09:03.448 UTC [1914] LOG: Redo starts at 0/4000028
+	2021-09-23 11:09:03.450 UTC [1914] LOG: Consistent recovery state reached at 0/4000100
+	2021-09-23 11:09:03.451 UTC [1911] LOG: Database system is ready to accept read-only connections
+	2021-09-23 11:09:03.478 UTC [1914] LOG: Restored log file "000000010000000000000005" from archive
+	2021-09-23 11:09:03.509 UTC [1914] LOG: Restored log file "000000010000000000000006" from archive
+	2021-09-23 11:09:03.525 UTC [1914] LOG: recovery stopping before commit of transaction 490, time 2021-09-23 11:04:36.732326+00
+	2021-09-23 11:09:03.525 UTC [1914] LOG: recovery has paused
+	2021-09-23 11:09:03.525 PTCC [1914]HINT. Execute pg wal_replay_resume() to continue
 
-select count (1) from test_tbil; /* 30 recorded */
 
-select now();
+					<- this command removes the recovery.signal file 
+	select count(1) from test_tbll; /* 20 */
+		count
+		-----
+		20
+	
+	test_db1=# select pg_wal_replay_resume();
+		pg_wal_replay_resume
+		--------------------
+		(1 row)
 
-sudo systemctl stop postgresql-12
+	test_db1=# create table test_tb12 (id int, name varchar(100));   <- We can now create object in the db 
+		CREATE TABLE
 
-rm -rf /var/lib/pgsql/12/data/*											*/
 
-sudo -u postgres mkdir /var/lib/pgsql/12/data/pg_wal
 
-tar -xvf /var/lib/pgsql/12/basebackup/base.tar -C /var/lib/pgsql/12/data/
-No need to restore wall file
-2021-09-23 09:36:21
+I
