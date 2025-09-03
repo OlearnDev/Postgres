@@ -2,7 +2,9 @@
 
 https://www.youtube.com/watch?v=Tn67kCaLElk&list=PLwxrtuGg5dNGv4jvDY3TEddn2HIn4-uF9&index=2
 
-1.Intro and Architecture -----------------------------
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.1.Intro and Architecture 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 FEATURES OF POSTGRES
 
@@ -146,8 +148,10 @@ $sudo -i -u postgres
 
 connect to 
 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.4.MANAGING TABLESPACES ------------------------------------------
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-4.MANAGING TABLESPACES ------------------------------------------
 
 pg_default :tablespace stores all user data.
 pg_global : tablespace stores all global data (dictionnaire)
@@ -436,8 +440,9 @@ postgres=# SHOW data_directory;
 data_directory
 /postgres/data (1 row)
 
-
-6.Introduction to PostgreSQL log_statement ----------****************************************************
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.6.Introduction to PostgreSQL log_statement ----------****************************************************
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 - It''s related to error and error reporting, along with warnings and database queries in a logfile.
 - The default log_statement option in the PostgreSQL configuration file is none, which means nothing will be logged 
@@ -559,7 +564,9 @@ INSERT INTO course (course_no, name, price) VALUES
 
 tail -10f postgresql-Mon.log
 
-8.Repmgr (Replication & Failover Management) **************************
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.8.Repmgr (Replication & Failover Management)
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 **** Streaming Replication in PostgreSQL (2 EC2 PostgreSQL-13)******
 
@@ -587,8 +594,8 @@ PostgreSQL is a widely used relational database that supports both logical and p
  replica clusters. As a result, you can''t replicate specific areas of a primary database cluster; instead, all 
  changes to the primary are replicated
 
-
-Overview of REPMGR ------------------------------****************************
+Overview of REPMGR 
+----------------------
 
 repmgr is an open-source tool for managing replication and failover of PostgreSQL servers.
 It supports and enhances PostgreSQL''s built-in streaming replication which provides a single read/write 
@@ -869,7 +876,11 @@ Both nodes are now registered with repmgr and the records have been copied to th
 
 Demo -> Check separate file for demo repmgr
 
-9.PSQL CHEATSHEET.  [Usual commands]-------------------------------------------------------------------------------
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.9.PSQL CHEATSHEET.  [Usual commands]
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 
 How to Connect to psql Locally on Linux
 
@@ -936,7 +947,11 @@ postgres # SELECT tablename, indexname, indexdef from pg_indexes WHERE tablename
 
 	\deu+: List all user mappings on the server
 
-10.Postgresql on Docker -------------------------------------------------------------------------------
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.10.Postgresql on Docker 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 
 HOW TO INSTALL POSTGRESQL ON DOCKER
 
@@ -1012,8 +1027,10 @@ How to restart a Docker container.
 How to stop a Docker container.
 	sudo docker stop container_id
 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.12.PostgreSQL internal authentication 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-12.PostgreSQL internal authentication -------------------------------------------------------------------------------
 
 PostgreSQL manages internal authentication mechanisms as mentioned in the pg_hba.conf file
 
@@ -1118,7 +1135,11 @@ host	all			all		IP/32		<span class="s1">scram-sha-256</span>
 
 psql postgres -U postgres
 
-13.Backup and Restore using pg_basebackup ------------------------------------------------------------------------
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.13.Backup and Restore using pg_basebackup 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 
 How to backup and restore using pb_basebackup on the same host
 pg_basebackup is used to backup all the cluster and not only a db
@@ -1322,7 +1343,10 @@ psql
 
 \l
 
-14.PostgreSQL-CREATE Database ------------------------------------------------------*********************
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.14.PostgreSQL-CREATE Database 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 	1. Using CREATE DATABASE.
 	2. Using createdb, a command-line utility
@@ -1392,7 +1416,11 @@ S. No. Parameter & Description
 
 	postgres# \l
 
-28. pg_basebackup : second partie --------------------------------------**************************************
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap. 28. pg_basebackup : second partie 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 
 	postgres
 	postgres=# \du
@@ -1458,7 +1486,10 @@ directory, showing a progress report while running:
 
   (This command will fail if there are multiple tablespaces in the database.)
 
-22.pgbackrest : PostgreSQL backup and restore --------------------------------------------*******************
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap. 22.pgbackrest : PostgreSQL backup and restore 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 What is pgBackRest?
 ------------
@@ -1655,9 +1686,9 @@ pgbackrest restore --stanza=Pgems-log-level-console=info
 pgbackrest info
 pgbackrest restore --stanza=Pgems --log-level-console=info --delta
 
-
-29.pg_dump and pg_dumpall -------------------------------------------********************************************
-
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap. 29.pg_dump and pg_dumpall 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 	Backup
 	 - Pg_dump 		: for backup of individual databases or tables 
 	 - Pg_dumpall	: for backup of all databases
@@ -1817,8 +1848,9 @@ Examples
 	$ pg_dump -t payment dvdrental > /postgres/backup/payment.sql
 
 
-30. Postgresql database migration from one host to another using pg_dumpall-------------------------****************
-
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.30. Postgresql database migration from one host to another using pg_dumpall
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 Prerequisites
 -------------
 	Disable firewall and selinux
@@ -1933,9 +1965,9 @@ s
 
 NB: You will need to manually create some objects like extensions (pg_cron ...)	
 
-
-45.How to Set Up Continuous Archiving and Perform PITR with PostgreSQL 13---------------****************************
-
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.45: How to Set Up Continuous Archiving and Perform PITR with PostgreSQL 13
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 What is WAL in Postgres?
   - Write-Ahead Logging (WAL) is a standard method for ensuring data integrity.	
   - Using WAL results in a significantly reduced number of disk writes, because only the log file needs to be flushed
@@ -2182,8 +2214,9 @@ Now try starting the PostgreSQL 13 cluster using the following command.
 Note: Ensure to put valid permission on the data directory and restore pg_wal and pg13_archive back to their 
      original location when the backup was taken
 
-
-Chap.31:Logical replication in PostgreSQL  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.31:Logical replication in PostgreSQL  
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 - Logical replication is a method of replicating data objects and their changes, based upon their replication identity
  (usually a primary key).
