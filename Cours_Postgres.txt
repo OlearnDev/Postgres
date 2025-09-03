@@ -148,6 +148,213 @@ $sudo -i -u postgres
 
 connect to 
 
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+Chap.32: Logical & Physical Architecture of PostgreSQL
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+PostgreSQL: Logical Structure of Postgres Database Cluster
+
+What is PostgreSQL Cluster:
+--------------------------
+A PostgreSQL Cluster does not mean "a collection of database nodes".A database cluster is a collection of databases
+hosted on a PostgreSQL server:
+	A database is a collection of database objects.
+	A database object is a data structure that can store data or refer to data stored remotely.
+	A database is also called database objects.
+
+What is OID Object Identifiers (OIDS):
+
+	- All the database objects in PostgreSQL are internally managed by object identifiers (OIDS), which are unsigned 
+	  4-byte integers. 
+	- The relationships between database objects and their respective OIDs are stored in appropriate system catalogs, 
+	 depending on the type of objects.
+
+For example, OIDs of databases are stored in pg_database, so you can find out the OIDs you want to know by issuing 
+queries such as the following:
+
+	SELECT datname, oid FROM pg_database WHERE datname 'testdb';
+	SELECT relname, oid FROM pg_class WHERE relname 'testdb';	
+
+Physical Structure of Database Cluster
+--------------------------------------
+A database cluster has one directory called the base directory.
+
+And it contains further subdirectories and many files.
+When you execute initdb to initialize a new database cluster,
+A base directory is created in the directory mentioned above.
+Generally, the path of the base directory is usually set to the environment variable PGDATA.
+
+Layout of files and subdirectories under the base directory.
+---------------------------------------------------------
+Files				Description
+--------			------------
+PG_VERSION			A file containing the major version number of PostgreSQL.
+pg_hba.conf	A 		file to control PostgreSQL''s client authentication. (host base auth file)
+pg_ident.conf		A file to control PostgreSQL''s user name mapping.
+postgresql.conf		A file to set configuration parameters.
+postgresql.auto.conf A file used for storing configuration parameters that are set in ALTER SYSTEM (version 9.4 or later).
+postmaster.opts		A file recording the command line options the server was last started with
+
+subdirectories				description
+-------------				----------------
+base/			Subdirectory containing per-database subdirectories.
+global/			Subdirectory containing cluster-wide tables like pg_database
+pg_commit_ts/	Subdirectory containing transaction commit timestamp data. Version 9.5 or later.
+pg_clog/		Obsolete. It is renamed to pg_xact in Version 10.
+pg_dynshmem/	Subdirectory containing files used by the dynamic shared memory subsystem. Version 9.4 or later.
+pg_logical/		Subdirectory containing status data for logical decoding. Version 9.4 or later.
+pg_multixact/	Subdirectory containing multitransaction status data (used for shared row locks)
+pg_notify/		Subdirectory containing LISTEN/NOTIFY status data
+pg_repslot/		Subdirectory containing replication slot data. Version 9.4 or later.
+pg_serial/		Subdirectory containing information about committed serializable transactions (version 9.1 or later)
+pg_snapshots/	Subdirectory containing exported snapshots (version 9.2 or later).
+				The PostgreSQL pg_export_snapshot function creates a snapshot information file in this subdirectory.
+
+pg_stat/		Subdirectory containing permanent files for the statistics subsystem.
+pg_stat_tmp/	Subdirectory containing temporary files for the statistics subsystem.
+pg_subtrans/	Subdirectory containing subtransaction status data
+pg_tblspc/		Subdirectory containing symbolic links to tablespaces
+pg_twophase/	Subdirectory containing state files for prepared transactions
+pg_wal/			(Version 10 or later) Subdirectory containing WAL (Write Ahead Logging) segment files.
+				It is renamed from pg_xlog in Version 10.
+
+pg_xact/		(Version 10 or later) Subdirectory containing transaction commit state data
+				It is renamed from pg_clog in Version 10.
+pg_xlog/		(Version 9.6 or earlier). Subdirectory containing WAL (Write Ahead Logging) segment files	
+
+-bash-4.2$cd $PGDATA/global
+-bash-4.2$ ls
+1213  1214_fsm  1213_fsm 1214_vm  1213_vm  1232  1214  1233  1260  1260_vm  1261  2676  1261_fsm  1260_fsm  1262
+1262 fsm  1262_vm 2396 2396_fsm  2397  2671 2396_vm 2677 2672
+...
+6100 1261_vm 6114  6115  pg_control  pg_filenode.map  pg_internal.init
+
+It is renamed to pg_wal in Version 10.
+
+* Files layout structure in database *
+---------------------------------------
+
+A database is available as a subdirectory under the base subdirectory; and the database directory names are equal to 
+the respective OIDs.
+
+For example :
+	psql #
+	SELECT datname, oid FROM pg_database WHERE datname = 'testdb';
+	SELECT datname, oid FROM pg_database WHERE datname = 'postgres';
+
+OID of the database testdb is 16390. 
+Its subdirectory name is 16390.
+
+How is the layout of files associated with tables and indexes stored in postgres
+------------------------------------------------------------------------------
+
+Tables and indexes are known as database objects and are internally managed by PostgreSQL as individual OIDs on file 
+systems, but the data files are managed by the variable called relfilenode.
+
+The relfilenode values of tables and indexes are basically the same but may match the OIDS.
+
+OID and relfilenode of a table employee.
+
+	CREATE TABLE course (
+	course_no integer,
+	name text,
+	price numeric
+	);
+
+-- Verify if the table is created
+
+select from course;
+
+INSERT INTO course (course_no, name, price) VALUES
+	(1, 'postgres', 150),
+	(2, 'mysql', 160),
+	(3, 'mongodb', 170);
+
+postgres=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname 'course';
+
+	relname	oid		relfilenode
+	-----	----	----------
+	course	|16391 |16391
+	(1 row)
+
+Relevant PATH:
+	cd $PGDATA
+	cd /var/lib/pgsql/13/data/base/16391
+
+	SELECT pg_relation_filepath('course');
+	
+		pg_relation_filepath
+		--------------------
+		base/16390/16397
+		(1 row)
+
+	- When the file size of tables and indexes exceeds 1 GB, PostgreSQL creates a new file named like relfilenode.1 
+	  and uses it
+	- The maximum file size of tables and indexes can be changed using the configuration option --with-segsize 
+	  when building PostgreSQL.
+	- Each table has two associated files suffixed with '_fsm' and '_vm' respectively
+	- IT is referred to as free space map and visibility map and staires the info of the free space capacity and the 
+	  visibility on each page
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+Chap.34: WHAT IS PASSWORD FILE
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+The .pgpass file, also known as the password file, in a user''s home directory can contain passwords to be used if 
+the connection requires a password.
+
+	$ psql -U postgres
+
+	Prompts for password
+
+When the password is saved in ~/.pgpass for the mentioned user, it does not prompt for password.
+
+	$ psql -U postgres
+
+	Does not prompt for password due to the password file being used
+	
+Location of the pgpass file
+-----------------------------
+	- Linux 	: Defaults to ~/.pgpass
+	- Windows   : %APPDATA%\postgresql\pgpass.conf
+
+Permission on the pgpass file
+---------------------------
+	In Linux  , 0600 pgpass
+	In Windows, the user must have full permission
+	
+FORMAT OF ENTRIES IN PASSWORD FILE
+------------------------------------
+Edit pgpass file and add the entries in the below-mentioned format only.
+
+format is a below with 5 entries in a line:
+
+	hostname:port:database:username:password
+
+Usage of password file:
+	It can be used when automating tasks like database backups, etc	
+	
+CONS OF USING PASSWORD FILE
+
+	- Contents of password file are visible in text format and are readable
+	- Kind of security breach
+
+Demo
+-----
+$ psql -U postgres -p 5432  <- prompts for password
+
+vi.pgpass
+
+	# format is as below
+
+	# hostname: port: database: username: password
+	localhost: 5432: postgres: postgres: password
+
+	chmod 0600 "/var/lib/pgsql/.pgpass"
+
+	$ psql -U postgres -p 5432  <- no prompt for password 
+	
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 Chap.4.MANAGING TABLESPACES ------------------------------------------
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -441,7 +648,7 @@ data_directory
 /postgres/data (1 row)
 
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-Chap.6.Introduction to PostgreSQL log_statement ----------****************************************************
+Chap.6.Introduction to PostgreSQL log_statement 
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 - It''s related to error and error reporting, along with warnings and database queries in a logfile.
@@ -529,8 +736,8 @@ course_no	name		price
 
 delete from course;
 
-Example #3 Log statement using ALL options. **************************
-
+Example #3 Log statement using ALL options. 
+------------------------------------------
 In the example below, we have used ALL options with the log statement parameter. It will log all statements 
 into the error log.
 
@@ -543,8 +750,8 @@ show log statement;
 CREATE TABLE course (course_no integer,name text,price numeric);
 select * from course;
 
-Example #4  Log statement using mod options.  **************************
-
+Example #4  Log statement using mod options.  
+------------------------------------------
 In the following example, we have used mod options with the log statement parameter. It will log DDL and DML 
 into the error log.
 
@@ -2338,209 +2545,3 @@ Insert data on publisher and see data are replicated on subscriber
 	INSERT INTO reptable (name, price) VALUES ('cream', 10.10);
 	INSERT INTO reptable (name, price) VALUES ('pastry', 20.10);
 	INSERT INTO reptable (name, price) VALUES ('cream', 10.10);
-
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-Chap.32: Logical & Physical Architecture of PostgreSQL
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-
-PostgreSQL: Logical Structure of Postgres Database Cluster
-
-What is PostgreSQL Cluster:
---------------------------
-A PostgreSQL Cluster does not mean "a collection of database nodes".A database cluster is a collection of databases
-hosted on a PostgreSQL server:
-	A database is a collection of database objects.
-	A database object is a data structure that can store data or refer to data stored remotely.
-	A database is also called database objects.
-
-What is OID Object Identifiers (OIDS):
-
-	- All the database objects in PostgreSQL are internally managed by object identifiers (OIDS), which are unsigned 
-	  4-byte integers. 
-	- The relationships between database objects and their respective OIDs are stored in appropriate system catalogs, 
-	 depending on the type of objects.
-
-For example, OIDs of databases are stored in pg_database, so you can find out the OIDs you want to know by issuing 
-queries such as the following:
-
-	SELECT datname, oid FROM pg_database WHERE datname 'testdb';
-	SELECT relname, oid FROM pg_class WHERE relname 'testdb';	
-
-Physical Structure of Database Cluster
---------------------------------------
-A database cluster has one directory called the base directory.
-
-And it contains further subdirectories and many files.
-When you execute initdb to initialize a new database cluster,
-A base directory is created in the directory mentioned above.
-Generally, the path of the base directory is usually set to the environment variable PGDATA.
-
-Layout of files and subdirectories under the base directory.
----------------------------------------------------------
-Files				Description
---------			------------
-PG_VERSION			A file containing the major version number of PostgreSQL.
-pg_hba.conf	A 		file to control PostgreSQL''s client authentication. (host base auth file)
-pg_ident.conf		A file to control PostgreSQL''s user name mapping.
-postgresql.conf		A file to set configuration parameters.
-postgresql.auto.conf A file used for storing configuration parameters that are set in ALTER SYSTEM (version 9.4 or later).
-postmaster.opts		A file recording the command line options the server was last started with
-
-subdirectories				description
--------------				----------------
-base/			Subdirectory containing per-database subdirectories.
-global/			Subdirectory containing cluster-wide tables like pg_database
-pg_commit_ts/	Subdirectory containing transaction commit timestamp data. Version 9.5 or later.
-pg_clog/		Obsolete. It is renamed to pg_xact in Version 10.
-pg_dynshmem/	Subdirectory containing files used by the dynamic shared memory subsystem. Version 9.4 or later.
-pg_logical/		Subdirectory containing status data for logical decoding. Version 9.4 or later.
-pg_multixact/	Subdirectory containing multitransaction status data (used for shared row locks)
-pg_notify/		Subdirectory containing LISTEN/NOTIFY status data
-pg_repslot/		Subdirectory containing replication slot data. Version 9.4 or later.
-pg_serial/		Subdirectory containing information about committed serializable transactions (version 9.1 or later)
-pg_snapshots/	Subdirectory containing exported snapshots (version 9.2 or later).
-				The PostgreSQL pg_export_snapshot function creates a snapshot information file in this subdirectory.
-
-pg_stat/		Subdirectory containing permanent files for the statistics subsystem.
-pg_stat_tmp/	Subdirectory containing temporary files for the statistics subsystem.
-pg_subtrans/	Subdirectory containing subtransaction status data
-pg_tblspc/		Subdirectory containing symbolic links to tablespaces
-pg_twophase/	Subdirectory containing state files for prepared transactions
-pg_wal/			(Version 10 or later) Subdirectory containing WAL (Write Ahead Logging) segment files.
-				It is renamed from pg_xlog in Version 10.
-
-pg_xact/		(Version 10 or later) Subdirectory containing transaction commit state data
-				It is renamed from pg_clog in Version 10.
-pg_xlog/		(Version 9.6 or earlier). Subdirectory containing WAL (Write Ahead Logging) segment files	
-
--bash-4.2$cd $PGDATA/global
--bash-4.2$ ls
-1213  1214_fsm  1213_fsm 1214_vm  1213_vm  1232  1214  1233  1260  1260_vm  1261  2676  1261_fsm  1260_fsm  1262
-1262 fsm  1262_vm 2396 2396_fsm  2397  2671 2396_vm 2677 2672
-...
-6100 1261_vm 6114  6115  pg_control  pg_filenode.map  pg_internal.init
-
-It is renamed to pg_wal in Version 10.
-
-* Files layout structure in database *
----------------------------------------
-
-A database is available as a subdirectory under the base subdirectory; and the database directory names are equal to 
-the respective OIDs.
-
-For example :
-	psql #
-	SELECT datname, oid FROM pg_database WHERE datname = 'testdb';
-	SELECT datname, oid FROM pg_database WHERE datname = 'postgres';
-
-OID of the database testdb is 16390. 
-Its subdirectory name is 16390.
-
-How is the layout of files associated with tables and indexes stored in postgres
-------------------------------------------------------------------------------
-
-Tables and indexes are known as database objects and are internally managed by PostgreSQL as individual OIDs on file 
-systems, but the data files are managed by the variable called relfilenode.
-
-The relfilenode values of tables and indexes are basically the same but may match the OIDS.
-
-OID and relfilenode of a table employee.
-
-	CREATE TABLE course (
-	course_no integer,
-	name text,
-	price numeric
-	);
-
--- Verify if the table is created
-
-select from course;
-
-INSERT INTO course (course_no, name, price) VALUES
-	(1, 'postgres', 150),
-	(2, 'mysql', 160),
-	(3, 'mongodb', 170);
-
-postgres=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname 'course';
-
-	relname	oid		relfilenode
-	-----	----	----------
-	course	|16391 |16391
-	(1 row)
-
-Relevant PATH:
-	cd $PGDATA
-	cd /var/lib/pgsql/13/data/base/16391
-
-	SELECT pg_relation_filepath('course');
-	
-		pg_relation_filepath
-		--------------------
-		base/16390/16397
-		(1 row)
-
-	- When the file size of tables and indexes exceeds 1 GB, PostgreSQL creates a new file named like relfilenode.1 
-	  and uses it
-	- The maximum file size of tables and indexes can be changed using the configuration option --with-segsize 
-	  when building PostgreSQL.
-	- Each table has two associated files suffixed with '_fsm' and '_vm' respectively
-	- IT is referred to as free space map and visibility map and staires the info of the free space capacity and the 
-	  visibility on each page
-
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-Chap.34: WHAT IS PASSWORD FILE
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-
-The .pgpass file, also known as the password file, in a user''s home directory can contain passwords to be used if 
-the connection requires a password.
-
-	$ psql -U postgres
-
-	Prompts for password
-
-When the password is saved in ~/.pgpass for the mentioned user, it does not prompt for password.
-
-	$ psql -U postgres
-
-	Does not prompt for password due to the password file being used
-	
-Location of the pgpass file
------------------------------
-	- Linux 	: Defaults to ~/.pgpass
-	- Windows   : %APPDATA%\postgresql\pgpass.conf
-
-Permission on the pgpass file
----------------------------
-	In Linux  , 0600 pgpass
-	In Windows, the user must have full permission
-	
-FORMAT OF ENTRIES IN PASSWORD FILE
-------------------------------------
-Edit pgpass file and add the entries in the below-mentioned format only.
-
-format is a below with 5 entries in a line:
-
-	hostname:port:database:username:password
-
-Usage of password file:
-	It can be used when automating tasks like database backups, etc	
-	
-CONS OF USING PASSWORD FILE
-
-	- Contents of password file are visible in text format and are readable
-	- Kind of security breach
-
-Demo
------
-$ psql -U postgres -p 5432  <- prompts for password
-
-vi.pgpass
-
-	# format is as below
-
-	# hostname: port: database: username: password
-	localhost: 5432: postgres: postgres: password
-
-	chmod 0600 "/var/lib/pgsql/.pgpass"
-
-	$ psql -U postgres -p 5432  <- no prompt for password 
