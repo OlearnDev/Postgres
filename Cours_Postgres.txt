@@ -11,7 +11,6 @@ You can connect using the web browser or using a shell:
 							$ssh -i key_name.pem ubuntu@public ip 
 							$cat /etc/os-release
 							You can check machine infos with: free -m, lscpu , df -h , ip a, hostname -i 
-
 NB: Default user is : 
 
 	Operating System			Default Username
@@ -26,6 +25,44 @@ NB: Default user is :
 	CentOS						centos or ec2-user
 	Windows						Administrator
 	
+Install postgres on ubuntu :
+--------------------------
+	$sudo apt update
+	$sudo apt install postgresql postgresql-contrib
+	ubuntu@ip-172-31-12-104:~$ ps -ef|grep postgresql
+	
+		postgres    4526       1  0 20:05 ?        00:00:00 /usr/lib/postgresql/16/bin/postgres -D /var/lib/postgresql/16/main -c config_file=/etc/postgresql/16/main/postgresql.conf
+		ubuntu      4623    1879  0 20:06 pts/0    00:00:00 grep --color=auto postgresql
+		ubuntu@ip-172-31-12-104:~$ sudo systemctl status postgresql
+		● postgresql.service - PostgreSQL RDBMS
+			 Loaded: loaded (/usr/lib/systemd/system/postgresql.service; enabled; preset: enabled)
+			 Active: active (exited) since Wed 2025-09-03 20:05:08 UTC; 1min 42s ago
+		   Main PID: 3629 (code=exited, status=0/SUCCESS)
+				CPU: 1ms
+
+		Sep 03 20:05:08 ip-172-31-12-104 systemd[1]: Starting postgresql.service - PostgreSQL RDBMS...
+		Sep 03 20:05:08 ip-172-31-12-104 systemd[1]: Finished postgresql.service - PostgreSQL RDBMS.
+	ubuntu@ip-172-31-12-104:~$
+	
+	ubuntu@ip-172-31-12-104:~$ sudo su - postgres
+	
+	postgres@ip-172-31-12-104:~$ psql
+		psql (16.9 (Ubuntu 16.9-0ubuntu0.24.04.1))
+		Type "help" for help.
+
+	postgres=# \l
+													   List of databases
+	   Name    |  Owner   | Encoding | Locale Provider | Collate |  Ctype  | ICU Locale | ICU Rules |   Access privileges   
+	-----------+----------+----------+-----------------+---------+---------+------------+-----------+-----------------------
+	 postgres  | postgres | UTF8     | libc            | C.UTF-8 | C.UTF-8 |            |           | 
+	 template0 | postgres | UTF8     | libc            | C.UTF-8 | C.UTF-8 |            |           | =c/postgres          +
+			   |          |          |                 |         |         |            |           | postgres=CTc/postgres
+	 template1 | postgres | UTF8     | libc            | C.UTF-8 | C.UTF-8 |            |           | =c/postgres          +
+			   |          |          |                 |         |         |            |           | postgres=CTc/postgres
+	(3 rows)
+
+	postgres=#
+
 	
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 Chap.1.Intro and Architecture 
