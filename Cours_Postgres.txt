@@ -2,6 +2,31 @@
 
 https://www.youtube.com/watch?v=Tn67kCaLElk&list=PLwxrtuGg5dNGv4jvDY3TEddn2HIn4-uF9&index=2
 
+
+Connexion to aws instance -----------------------------------------------------------------
+ 
+You can connect using the web browser or using a shell:
+
+							$chmod 400 key_name.pem 
+							$ssh -i key_name.pem ubuntu@public ip 
+							$cat /etc/os-release
+							You can check machine infos with: free -m, lscpu , df -h , ip a, hostname -i 
+
+NB: Default user is : 
+
+	Operating System			Default Username
+	------------------			---------------
+	Amazon Linux 2023			ec2-user
+	Amazon Linux 2				ec2-user
+	Amazon Linux (original)		ec2-user
+	Ubuntu						ubuntu
+	Debian						admin
+	Red Hat Enterprise Linux 	ec2-user or root
+	SUSE Linux					ec2-user or root
+	CentOS						centos or ec2-user
+	Windows						Administrator
+	
+	
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 Chap.1.Intro and Architecture 
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
