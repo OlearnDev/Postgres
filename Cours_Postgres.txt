@@ -2514,6 +2514,33 @@ Permission on the pgpass file
 	In Linux  , 0600 pgpass
 	In Windows, the user must have full permission
 	
+FORMAT OF ENTRIES IN PASSWORD FILE
+------------------------------------
+Edit pgpass file and add the entries in the below-mentioned format only.
+
+format is a below with 5 entries in a line:
+
+	hostname:port:database:username:password
+
+Usage of password file:
+	It can be used when automating tasks like database backups, etc	
 	
-	
-	
+CONS OF USING PASSWORD FILE
+
+	- Contents of password file are visible in text format and are readable
+	- Kind of security breach
+
+Demo
+-----
+$ psql -U postgres -p 5432  <- prompts for password
+
+vi.pgpass
+
+	# format is as below
+
+	# hostname: port: database: username: password
+	localhost: 5432: postgres: postgres: password
+
+	chmod 0600 "/var/lib/pgsql/.pgpass"
+
+	$ psql -U postgres -p 5432  <- no prompt for password 
