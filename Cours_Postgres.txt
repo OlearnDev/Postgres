@@ -2473,9 +2473,47 @@ Relevant PATH:
 	cd /var/lib/pgsql/13/data/base/16391
 
 	SELECT pg_relation_filepath('course');
+	
+		pg_relation_filepath
+		--------------------
+		base/16390/16397
+		(1 row)
 
 	- When the file size of tables and indexes exceeds 1 GB, PostgreSQL creates a new file named like relfilenode.1 
 	  and uses it
 	- The maximum file size of tables and indexes can be changed using the configuration option --with-segsize 
 	  when building PostgreSQL.
 	- Each table has two associated files suffixed with '_fsm' and '_vm' respectively
+	- IT is referred to as free space map and visibility map and staires the info of the free space capacity and the 
+	  visibility on each page
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+Chap.34: WHAT IS PASSWORD FILE
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+The .pgpass file, also known as the password file, in a user''s home directory can contain passwords to be used if 
+the connection requires a password.
+
+	$ psql -U postgres
+
+	Prompts for password
+
+When the password is saved in ~/.pgpass for the mentioned user, it does not prompt for password.
+
+	$ psql -U postgres
+
+	Does not prompt for password due to the password file being used
+	
+Location of the pgpass file
+-----------------------------
+	- Linux 	: Defaults to ~/.pgpass
+	- Windows   : %APPDATA%\postgresql\pgpass.conf
+
+Permission on the pgpass file
+---------------------------
+	In Linux  , 0600 pgpass
+	In Windows, the user must have full permission
+	
+	
+	
+	
