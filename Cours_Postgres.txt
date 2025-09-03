@@ -2183,4 +2183,23 @@ Note: Ensure to put valid permission on the data directory and restore pg_wal an
      original location when the backup was taken
 
 
+Chap.31:Logical replication in PostgreSQL  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+- Logical replication is a method of replicating data objects and their changes, based upon their replication identity
+ (usually a primary key).
+- Logical replication allows fine-grained control over both data replication and security.
+- Subscribers pull data from the publications they subscribe to.
+- Logical replication of a table typically starts with taking a snapshot of the data on the publisher database and 
+  copying that to the subscriber
+- Changes on the publisher are sent to the subscriber as they occur in real-time.
+- The subscriber applies the data in the same order as the publisher, ensuring transactional consistency
+
+Use cases for logical replication
+-------------------------------------
+	- Sending incremental changes in a single database/database to subscribers.
+	- Consolidating multiple databases into a single one.
+	- Replicating between different major versions
+	- Replicating between PostgreSQL instances on different platforms		***
+	- Sharing a subset of the database between multiple databases
+
 
