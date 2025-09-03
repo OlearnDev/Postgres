@@ -2235,4 +2235,54 @@ Use cases for logical replication
 	- Replicating between PostgreSQL instances on different platforms		***
 	- Sharing a subset of the database between multiple databases
 
+Publication and Subscription
+-----------------------------------------
+	- The node where a publication is defined is referred to as the publisher.
+	- A publication is a set of changes generated from a table or a group of tables (change set or replication set).
+	- Each publication exists in only one database.
 
+Subscriber
+----------
+	- A subscription is the downstream side of logical replication.
+	- The node where a subscription is defined is referred to as the subscriber.
+	- A subscription defines the connection to another database and the set of publications (one or more) to which it wants to subscribe
+
+
+Restriction
+-------------
+	- The database schema and DDL commands are not replicated.
+	- Sequence data is not replicated.
+	- TRUNCATE commands are not replicated. Use Delete.
+	- Large objects are not replicated.
+	- Replication is only possible from base tables to base tables.
+	- N/A for views, materialized views, partition root tables, or foreign tables
+	
+Demo 
+----
+Prerequisites
+	To follow this tutorial, you will need:
+
+IP address		hostname	Postgres Version	Role
+----------		--------	-----------			----------
+192.168.1.51	Linux 1		12					Publisher
+192.168.1.61	Linux 2		12					Subscriber
+
+Step 1: Configuring PostgreSQL (Publisher) for Logical Replication
+
+sudo systemctl start postgresql-12
+sudo vi $PGDATA/postgresql.conf
+
+	#listen_addresses 'localhost'
+	#what IP address(es) to listen on?
+
+	wal_level = logical
+
+vi $PGDATA/pg_hba.conf
+
+	# TYPE		DATABASE	USER	ADDRESS				METHOD
+	-------		--------	------	---------------		--------
+	host		all			all		192.168.1.61/32		md5
+
+Step 2: Creating a Database, User, and Table
+
+192.168.1.51 (linux1)
