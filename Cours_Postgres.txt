@@ -2268,21 +2268,214 @@ IP address		hostname	Postgres Version	Role
 192.168.1.61	Linux 2		12					Subscriber
 
 Step 1: Configuring PostgreSQL (Publisher) for Logical Replication
-
+------------------------------------------------------------------
 sudo systemctl start postgresql-12
 sudo vi $PGDATA/postgresql.conf
 
-	#listen_addresses 'localhost'
-	#what IP address(es) to listen on?
-
-	wal_level = logical
+	listen_addresses = '192.168.1.51' 	#what IP address(es) to listen on?
+	wal_level = logical		***
 
 vi $PGDATA/pg_hba.conf
 
 	# TYPE		DATABASE	USER	ADDRESS				METHOD
 	-------		--------	------	---------------		--------
-	host		all			all		192.168.1.61/32		md5
+	host		all			all		192.168.1.61/32		md5			<- ip of subscriber 
 
 Step 2: Creating a Database, User, and Table
+--------------------------------------------
+192.168.1.51 (linux1)  - P
 
-192.168.1.51 (linux1)
+	psql
+	postgres# CREATE DATABASE repdb;
+	postgres# \c repdb
+	postgres# CREATE TABLE reptable
+				(
+				id SERIAL,
+				name TEXT, price DECIMAL,
+				CONSTRAINT reptable_pkey PRIMARY KEY (id)
+				);
+
+	postgres# CREATE ROLE repuser WITH REPLICATION LOGIN PASSWORD 'secret_password';
+	postgres# GRANT ALL PRIVILEGES ON DATABASE repdb TO repuser;
+	postgres# GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO repuser;
+
+192.168.1.61 (linux2) - S
+	
+	We create structure of tables as DDL are not allowed: 
+	
+	psql
+	CREATE DATABASE repdb;
+	\c repdb
+	postgres# CREATE TABLE reptable
+				(
+				id SERIAL,
+				name TEXT, price DECIMAL,
+				CONSTRAINT reptable_pkey PRIMARY KEY (id)
+				);
+
+Step 3 - Setting Up a Publication (linux1 192.168.1.51)
+-------------------------------------
+	
+	CREATE PUBLICATION my_publication;
+	ALTER PUBLICATION my_publication ADD TABLE reptable;
+	
+	sudo systemctl start postgresql-12
+
+Step 4 Creating a Subscription (192.168.1.61 linux2)
+-------------------------------------
+
+Subscriptions are used by PostgreSQL to connect to existing publications
+
+	sudo su postgres
+	psql
+	repdb# CREATE SUBSCRIPTION my_subscription CONNECTION 'host=192.168.1.51 port=5432 password=secret_password user=repuser dbname=repdb' PUBLICATION my_publication;
+	
+Step 5 - Testing replication
+--------------------------------
+
+Insert data on publisher and see data are replicated on subscriber 
+
+	INSERT INTO reptable (name, price) VALUES ('cream', 10.10);
+	INSERT INTO reptable (name, price) VALUES ('pastry', 20.10);
+	INSERT INTO reptable (name, price) VALUES ('cream', 10.10);
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+Chap.32: Logical & Physical Architecture of PostgreSQL
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+
+PostgreSQL: Logical Structure of Postgres Database Cluster
+
+What is PostgreSQL Cluster:
+--------------------------
+A PostgreSQL Cluster does not mean "a collection of database nodes".A database cluster is a collection of databases
+hosted on a PostgreSQL server:
+	A database is a collection of database objects.
+	A database object is a data structure that can store data or refer to data stored remotely.
+	A database is also called database objects.
+
+What is OID Object Identifiers (OIDS):
+
+	- All the database objects in PostgreSQL are internally managed by object identifiers (OIDS), which are unsigned 
+	  4-byte integers. 
+	- The relationships between database objects and their respective OIDs are stored in appropriate system catalogs, 
+	 depending on the type of objects.
+
+For example, OIDs of databases are stored in pg_database, so you can find out the OIDs you want to know by issuing 
+queries such as the following:
+
+	SELECT datname, oid FROM pg_database WHERE datname 'testdb';
+	SELECT relname, oid FROM pg_class WHERE relname 'testdb';	
+
+Physical Structure of Database Cluster
+--------------------------------------
+A database cluster has one directory called the base directory.
+
+And it contains further subdirectories and many files.
+When you execute initdb to initialize a new database cluster,
+A base directory is created in the directory mentioned above.
+Generally, the path of the base directory is usually set to the environment variable PGDATA.
+
+Layout of files and subdirectories under the base directory.
+---------------------------------------------------------
+Files				Description
+--------			------------
+PG_VERSION			A file containing the major version number of PostgreSQL.
+pg_hba.conf	A 		file to control PostgreSQL''s client authentication. (host base auth file)
+pg_ident.conf		A file to control PostgreSQL''s user name mapping.
+postgresql.conf		A file to set configuration parameters.
+postgresql.auto.conf A file used for storing configuration parameters that are set in ALTER SYSTEM (version 9.4 or later).
+postmaster.opts		A file recording the command line options the server was last started with
+
+subdirectories				description
+-------------				----------------
+base/			Subdirectory containing per-database subdirectories.
+global/			Subdirectory containing cluster-wide tables like pg_database
+pg_commit_ts/	Subdirectory containing transaction commit timestamp data. Version 9.5 or later.
+pg_clog/		Obsolete. It is renamed to pg_xact in Version 10.
+pg_dynshmem/	Subdirectory containing files used by the dynamic shared memory subsystem. Version 9.4 or later.
+pg_logical/		Subdirectory containing status data for logical decoding. Version 9.4 or later.
+pg_multixact/	Subdirectory containing multitransaction status data (used for shared row locks)
+pg_notify/		Subdirectory containing LISTEN/NOTIFY status data
+pg_repslot/		Subdirectory containing replication slot data. Version 9.4 or later.
+pg_serial/		Subdirectory containing information about committed serializable transactions (version 9.1 or later)
+pg_snapshots/	Subdirectory containing exported snapshots (version 9.2 or later).
+				The PostgreSQL pg_export_snapshot function creates a snapshot information file in this subdirectory.
+
+pg_stat/		Subdirectory containing permanent files for the statistics subsystem.
+pg_stat_tmp/	Subdirectory containing temporary files for the statistics subsystem.
+pg_subtrans/	Subdirectory containing subtransaction status data
+pg_tblspc/		Subdirectory containing symbolic links to tablespaces
+pg_twophase/	Subdirectory containing state files for prepared transactions
+pg_wal/			(Version 10 or later) Subdirectory containing WAL (Write Ahead Logging) segment files.
+				It is renamed from pg_xlog in Version 10.
+
+pg_xact/		(Version 10 or later) Subdirectory containing transaction commit state data
+				It is renamed from pg_clog in Version 10.
+pg_xlog/		(Version 9.6 or earlier). Subdirectory containing WAL (Write Ahead Logging) segment files	
+
+-bash-4.2$cd $PGDATA/global
+-bash-4.2$ ls
+1213  1214_fsm  1213_fsm 1214_vm  1213_vm  1232  1214  1233  1260  1260_vm  1261  2676  1261_fsm  1260_fsm  1262
+1262 fsm  1262_vm 2396 2396_fsm  2397  2671 2396_vm 2677 2672
+...
+6100 1261_vm 6114  6115  pg_control  pg_filenode.map  pg_internal.init
+
+It is renamed to pg_wal in Version 10.
+
+* Files layout structure in database *
+---------------------------------------
+
+A database is available as a subdirectory under the base subdirectory; and the database directory names are equal to 
+the respective OIDs.
+
+For example :
+	psql #
+	SELECT datname, oid FROM pg_database WHERE datname = 'testdb';
+	SELECT datname, oid FROM pg_database WHERE datname = 'postgres';
+
+OID of the database testdb is 16390. 
+Its subdirectory name is 16390.
+
+How is the layout of files associated with tables and indexes stored in postgres
+------------------------------------------------------------------------------
+
+Tables and indexes are known as database objects and are internally managed by PostgreSQL as individual OIDs on file 
+systems, but the data files are managed by the variable called relfilenode.
+
+The relfilenode values of tables and indexes are basically the same but may match the OIDS.
+
+OID and relfilenode of a table employee.
+
+	CREATE TABLE course (
+	course_no integer,
+	name text,
+	price numeric
+	);
+
+-- Verify if the table is created
+
+select from course;
+
+INSERT INTO course (course_no, name, price) VALUES
+	(1, 'postgres', 150),
+	(2, 'mysql', 160),
+	(3, 'mongodb', 170);
+
+postgres=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname 'course';
+
+	relname	oid		relfilenode
+	-----	----	----------
+	course	|16391 |16391
+	(1 row)
+
+Relevant PATH:
+	cd $PGDATA
+	cd /var/lib/pgsql/13/data/base/16391
+
+	SELECT pg_relation_filepath('course');
+
+	- When the file size of tables and indexes exceeds 1 GB, PostgreSQL creates a new file named like relfilenode.1 
+	  and uses it
+	- The maximum file size of tables and indexes can be changed using the configuration option --with-segsize 
+	  when building PostgreSQL.
+	- Each table has two associated files suffixed with '_fsm' and '_vm' respectively
