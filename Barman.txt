@@ -1,0 +1,269 @@
+Chap.58 - barman : Backup and recovery tool for PostgreSQL
+
+Streaming backup with WAL archiving
+
+*PostgreSQL backup strategies overview
+
+There are three approaches to backing up a PostgreSQL database.
+
+	1. SQL dump
+	2. File system-level backup
+	3. Continuous archiving
+
+SQL Dump
+------------
+	It creates a file with SQL commands that, when restored to the server, will recreate the database in the same 
+	state as it was at the time of the dump.
+	PostgreSQL provides the utility program pg_dump for this purpose.
+
+		Usage
+
+		pg_dump dbname > dumpfile
+
+	pg_dump can create files in other formats that allow for parallelism and more fine-grained control of object restoration.
+
+	Advantages
+	-----------
+	An important advantage of pg_dump over the other backup methods described is that it can be reloaded into 
+	newer versions of PostgreSQL.
+
+	While file-level backups and continuous archiving are both extremely server-version-specific,
+
+	pg_dump is also the only method that will work when transferring a database to a different machine 
+	architecture, such as going from a 32-bit to a 64-bit server
+	
+	
+	Restoring the Dump
+	-------------------
+
+	Text files created by pg_dump are intended to be read in by the psql program. The general command form to 
+	restore a dump is:
+
+		psql dbname < dumpfile
+
+	The pg_dump and psql can be used to write or read from pipes, which makes it possible to dump a database 
+	directly from one server to another, for example:
+
+		pg_dump -h host1 dbname | psql -h host2 dbname
+
+	Using pg_dumpall
+	------------------
+	pg_dump dumps only a single database at a time, and it does not dump information about roles or tablespaces 
+	(because those are cluster-wide rather than per-database).
+	
+	To support convenient dumping of the entire contents of a database cluster, the pg_dumpall program is 
+	provided. pg_dumpall backs up each database in a given cluster and also preserves cluster-wide data such as 
+	role and tablespace definitions. The basic usage of this command is:
+
+		pg_dumpall > dumpfile
+
+	The resulting dump can be restored with psql:
+
+		psql -f dumpfile postgres
+	
+2) File System Level Backup
+   ------------------------
+	Backup strategy is to copy the files that PostgreSQL uses to store the data in the database;
+	for example:
+
+		tar -cf backup.tar /usr/local/pgsql/data
+
+	Disadvantages of using it that make this method impractical, or at least inferior to the pg_dump method:
+	-------------
+	1) The database server must be shut down in order to obtain a usable backup.
+
+	    Just restoring all connections will not work (in part because tar and similar tools do not take an atomic 
+		snapshot of the state of the file system, but also because of internal buffering within the server).
+
+	2) You cannot try to back up or restore only certain individual tables or databases from their respective 
+	   files or directories
+
+	An alternative file-system backup approach is to take a "consistent snapshot" of the data directory, if the 
+	file system supports that functionality (and you are willing to trust that it is implemented correctly). 
+	
+	The typical procedure is to take a "frozen snapshot" of the volume containing the database, then copy the 
+	entire data directory (not just parts, see above) from the snapshot to a backup device, and then release the 
+	frozen snapshot
+	
+	Using RSYNC
+	------------
+	Another option is to use rsync to perform a file system backup.
+
+	This is done by first running rsync while the database server is running, and then shutting down the database
+	server long enough to do an rsync-checksum. (--checksum is necessary because rsync only has f....
+
+	Note that a file system backup will typically be larger than an SQL dump. (pg_dump does not need to dump the 
+	contents of indexes.
+
+3) Continuous Archiving and Point-in-Time Recovery (PITR)
+   ----------------------------------------------------
+* Barman Overview *
+-----------------
+	Barman is an open source administration tool for disaster recovery for PostgreSQL.
+	Written in Python, it allows you to perform remote backups of multiple PostgreSQL servers
+	barman creates backups based on the PostgreSQL logs and not by performing a simple pg_dump dump file.
+	Barman was originally developed by 2ndQuadrant and is now maintained by EnterpriseDB.
+
+	Some of the top features of barman are as follows:
+
+		Backup catalogs
+		Incremental backup
+		Retention policies
+		Remote recovery
+		Archiving
+		Compression of WAL files and backups.
+
+Capabilities of barman
+----------------------
+	Full hot physical backup of a PostgreSQL server
+	Point-in-Time-Recovery (PITR)
+	Management of multiple PostgreSQL servers
+	Remote backup via rsync/SSH or pg_basebackup (including a 9.2+ standby)
+	Support for both local and remote (via SSH) recovery
+	Support for both WAL archiving and streaming
+	Support for synchronous WAL streaming ("zero data loss", RPO-B)
+	Incremental backup and recovery
+	Parallel backup and recovery
+		Hub of WAL files for enhanced integration with standby servers
+		Management of retention policies for backups and WAL files
+		Server status and information
+		Compression of HAL files (bzip2, gzip, or custom)
+		Management of base backups and WAL files through a catalog
+		A simple INI configuration file
+		
+	Totally written in Python
+		Relocation of PGDATA and tablespaces at recovery time
+			General and disk usage information of backups
+			Server diagnostics for backup
+			Integration with standard archiving tools (e.g., tar)
+			Pre/Post backup hook scripts
+			Local storage of metadata
+
+Barman vs. pg_dump
+-----------------
+	pg_dump is used for performing logical backups.
+	A logical backup is a snapshot of all the objects and data contained in a database.
+	While taking a logical backup is a quick option, it is not a sufficient technique for disaster recovery 
+	purposes.
+	Any transaction performed after a logical backup will be lost until a new logical backup with pg_dump is made
+	at a particular time, and you have a crash x hours after that.
+
+	In this case, your data loss is worth x hours of transactions.
+	In a production environment, this scenario might not be acceptable.
+
+Design and architecture
+-----------------------
+	Install Barman on a dedicated server
+	Do not share the same storage with your PostgreSQL server
+	Integrate Barman with your monitoring infrastructure 2
+	Test everything before you deploy it to production.
+
+	A very common setup for Barman is to be installed in the same data center where your PostgreSQL servers are
+
+	One Barman, many PostgreSQL servers
+	-----------------------------------
+	Barman can store backup data coming from multiple PostgreSQL instances, even with different versions, in a 
+	centralized way
+
+Streaming backup vs. rsync/SSH
+------------------------------
+	Barman works remotely via SSH using rsync for physical backup operations.
+	It supports PostgreSQL's streaming replication protocol for backup operations, via pg_basebackup.
+
+	Backup via streaming replication is recommended for PostgreSQL >=9.4
+	In case you do not use tablespaces, backup over streaming can be used starting from PostgreSQL 9.2.
+
+	Backup via rsync/SSH is available for all versions of PostgreSQL starting from 8.3, and it is recommended 
+	in all cases 
+	except :
+	 where pg_basebackup limitations occur
+	 (for example, a very large database that can benefit from incremental backup and deduplication).
+
+Standard archiving, WAL streaming, ... or both
+------------------------------------------
+	PostgreSQL's requires that transactional logs be called xlog or WAL files for PITR.
+
+	Barman has supported standard WAL file shipping through PostgreSQL's archive_command (usually via rsync/SSH, 
+	now via barman-wal-archive from the barman-cli package).
+	
+	With this method, WAL files are archived only when PostgreSQL switches to a new WAL file.
+	It happens every 16MB worth of data changes.
+	
+	Barman 2.0 introduces support for replication slots with PostgreSQL servers 9.4 or above, therefore allowing 
+	WAL streaming-only configurations.
+
+	You can now add Barman as a synchronous WAL receiver for >= PostgreSQL  9.5 to achieve zero data loss (RPO-0).
+
+PostgreSQL backup scenarios
+---------------------------
+
+1: Backup via streaming protocol
+
+	For PostgreSQL >= 9.4, you need to use a streaming backup installation.
+
+	In this scenario, you will need to configure:
+	
+Connection to PostgreSQL, for management, coordination, and monitoring purposes.
+A streaming replication connection that will be used by both pg_basebackup (for base backup operations) 
+and pg_receivewal (for MAL streaming) is known as a streaming-only setup, as it does not require any SSH 
+connection for backup and archiving operations.
+
+Suitable for Docker environments.
+
+You can configure standard archiving as well and implement a better architecture.
+---------------------------------------------------------------------------------
+	1b) Streaming backup with WAL archiving
+
+	An additional SSH connection that allows the Postgres user on the PostgreSQL server	
+	to connect as barman user on the Barman server
+
+	The archive_command in PostgreSQL must be configured to ship WAL files to Barman
+
+	This architecture is also available to PostgreSQL 9.2/9.3 users who do not use tablespaces.
+
+2: Backup via rsync/SSH
+------------------------
+The traditional setup of rsync over SSH is the only available option for:
+
+	PostgreSQL servers version 8.3, 8.4, 9.0, or 9.1
+	PostgreSQL servers version 9.2 or 9.3 that are using tablespaces
+	Incremental backup, parallel backup, and deduplication
+	Network compression during backups
+	Finer control of bandwidth usage, including on a tablespace basis.
+
+Requirements
+------------
+Connection to PostgreSQL for management, coordination, and monitoring purposes
+SSH for base backup operations to be used by rsync that allows the barman user on the Barman server to connect 
+ as Postgres user on the PostgreSQL server.
+
+SSH for WAL archiving to be used by the archive_command in PostgreSQL and that allows the postgres user on the 
+PostgreSQL server to connect as barman user on the Barman server.
+
+System requirements
+------------
+Linux/Unix
+	Python >= 3.4
+	Python modules:
+		argcomplete
+		argh >= 0.21.2
+		psycopg2 > 2.4.2
+		python-dateutil
+
+setuptools
+
+PostgreSQL > 8.3
+
+rsync >= 3.0.4 (optional for PostgreSQL >= 9.2)
+
+IMPORTANT: Users of RedHat Enterprise Linux, CentOS, and Scientific Linux are required to install the Extra Packages Enterprise
+
+Linux (EPEL) repository
+
+NOTE: Support for Python 2.6 and 2.7 is deprecated and will be discontinued in future releases.
+
+Support for PostgreSQL < 9.4 is deprecated and will be discontinued in future releases.
+
+Storage Requirements for Backup
+
+	
