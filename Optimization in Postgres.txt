@@ -1,0 +1,112 @@
+---- Optimization in Postgres --------------------
+
+The different phases for optimizing and running a query in PostgreSQL
+--------------------------------------------------------------------
+PostgreSQL has a very well-defined process for handling a query, from the moment it receives a string of text 
+until it returns the final result. Understanding these phases is crucial for performance tuning.
+
+Here are the different phases for optimizing and running a query in PostgreSQL, broken down step-by-step.
+
+The High-Level Phases
+-----------------------
+The journey of a query can be summarized in four main stages:
+
+	Parsing
+	Rewriting (Rule System)
+	Planning / Optimization Phase
+	Execution
+
+
+1. Parsing Phase
+-------------------
+	This phase is all about syntax. The goal is to turn the raw text of the SQL statement into a valid, 
+	understood structure.
+
+	Sub-Phase 1: Lexical Analysis (Scanning)
+
+		The query string is broken down into individual tokens (keywords, identifiers, operators, literals).
+		For example, SELECT id FROM users WHERE name = 'Alice'; is broken into tokens: SELECT, id, FROM, users, 
+		  WHERE, name, =, 'Alice'.
+		Error: This is where you get syntax errors like ERROR: syntax error at or near "FROM" if a keyword is 
+		 misspelled.
+
+	Sub-Phase 2: Syntactic Analysis (Parsing)
+
+		The tokens are assembled into a parse tree based on the grammar rules of SQL.
+		This tree validates the structure of the statement. It checks if the ORDER BY clause is in the right
+		place, if the WHERE clause is structured correctly, etc.
+
+		The output is a parse tree. At this point, the system knows it''s a valid SELECT statement from the
+		users table with a filter, but it doesn''t know if the table users or the column name actually exists.
+
+2. Rewriting Phase (Rule System)
+------------------------------------
+	The parse tree is now transformed using PostgreSQL''s rule system.
+
+	What happens: The rewriter processes the parse tree against a catalog of rules (stored in pg_rules). If a 
+	  rule matches an object in the tree, the tree is rewritten.
+
+	Most Common Example: View Expansion
+
+	If your query is SELECT * FROM my_view, the rewriter will replace the reference to my_view with the actual 
+	SELECT statement that defines the view. The subsequent phases will only see the underlying tables, not the
+	view itself.
+
+	This phase outputs a query tree, which is often similar to the parse tree but with these transformations 
+	applied.
+
+3. Planning / Optimization Phase
+--------------------------------------
+	This is the brain of the operation and the most critical phase for performance. The planner''s job is to 
+	take the query tree and generate the most efficient execution plan (also known as a "query plan") from all 
+	possible alternatives.
+
+	The planner uses database statistics (pg_statistic, gathered by ANALYZE) about your tables and indexes to 
+	estimate the cost of each potential operation.
+
+	Its core tasks are:
+
+	Table Scan Strategy: Should it read the entire table (sequential scan) or use an index (index scan, bitmap 
+	index scan)? The planner estimates the cost of each based on the number of rows to be fetched and physical 
+	I/O cost.
+
+	Join Strategy: If the query involves joins, what is the best algorithm? (e.g., Nested Loop Join, Hash Join, 
+	Merge Join). The planner will choose based on the estimated size of the result sets and the availability of indexes.
+
+	Join Order: In what order should tables be joined to produce the smallest intermediate result sets first?
+
+	Sort and Aggregation Strategy: How should ORDER BY, DISTINCT, and GROUP BY be implemented? In memory? On 
+	disk? Using an index?
+
+	The output of this phase is a query plan: a tree of nodes (scan nodes, join nodes, sort nodes, etc.) that 
+	the execution engine can understand and process. You can see this plan using the EXPLAIN command.
+
+	Example of a simple plan:
+
+	text
+	QUERY PLAN
+	-----------------------------------------------------------
+	Bitmap Heap Scan on users  (cost=4.20..13.34 rows=4 width=14)
+	  Recheck Cond: (name = 'Alice'::text)
+	  ->  Bitmap Index Scan on idx_users_name  (cost=0.00..4.20 rows=4 width=0)
+			Index Cond: (name = 'Alice'::text)
+	This plan shows it will use an index (idx_users_name) to quickly find rows where name = 'Alice'.
+
+4. Execution Phase
+--------------------
+	The final phase is where the rubber meets the road. The executor takes the query plan and processes it
+	recursively.
+
+	How it works: It starts from the root node of the plan tree and demands rows from its child nodes. Those 
+	child nodes demand rows from their children, and so on, until they get to a leaf node (like a table scan).
+
+	Pipelining: The executor often works in a pipeline. It doesn''t wait for the entire result set to be 
+	generated before sending data back. As soon as it has a few rows ready, it can send them to the client.
+
+	Components: The executor utilizes all the core components of the database:
+
+		Access Methods: To read data from tables (seq scan, index scan`).
+		CPU Operations: To perform calculations, evaluate WHERE clauses, and manipulate data.
+		Memory & Disk: For sorting, hashing, and temp storage of large result sets that don''t fit in work_mem.
+
+	Once all rows are processed, the result set is returned to the client, and the query is complete.
