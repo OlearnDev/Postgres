@@ -85,7 +85,6 @@ The journey of a query can be summarized in four main stages:
 
 	Example of a simple plan:
 
-	text
 	QUERY PLAN
 	-----------------------------------------------------------
 	Bitmap Heap Scan on users  (cost=4.20..13.34 rows=4 width=14)
@@ -118,7 +117,7 @@ Chap.2 : Prepared Statement
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 1. What is a Prepared Statement?
---------------------
+--------------------------------
 	A prepared statement is a server-side object that allows you to pre-compile a SQL query template, separating 
 	its structure from its parameters.
 
@@ -240,13 +239,15 @@ You can influence this behavior with the plan_cache_mode setting:
 
 Summary
 --------
-Aspect			Description
-What			A pre-compiled SQL template with parameter placeholders.
-How	PREPARE 	(parse & plan) once, then EXECUTE (run) many times.
-Key Feature		Adaptive planning: chooses between custom and generic plans.
-Benefit #1		Performance: Reduces parsing and planning overhead.
-Benefit #2		Security: Virtually eliminates SQL injection by separating code from data.
-Usage			Mostly used implicitly via parameterized queries in application code.
+
+	Aspect			Description
+	----------		-------------------------------------
+	What			A pre-compiled SQL template with parameter placeholders.
+	How	PREPARE 	(parse & plan) once, then EXECUTE (run) many times.
+	Key Feature		Adaptive planning: chooses between custom and generic plans.
+	Benefit #1		Performance: Reduces parsing and planning overhead.
+	Benefit #2		Security: Virtually eliminates SQL injection by separating code from data.
+	Usage			Mostly used implicitly via parameterized queries in application code.
 
 Prepared statements are a cornerstone of writing efficient, secure, and professional database-driven 
 applications. You should always use parameterized queries (which use prepared statements) instead of string 
