@@ -2607,3 +2607,74 @@ Insert data on publisher and see data are replicated on subscriber
 	INSERT INTO reptable (name, price) VALUES ('cream', 10.10);
 	INSERT INTO reptable (name, price) VALUES ('pastry', 20.10);
 	INSERT INTO reptable (name, price) VALUES ('cream', 10.10);
+	
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.22:Pg_Repack utility in PostgreSQL  
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+What is pg_repack utility in PostgreSQL
+-------------------------------------------
+	pg_repack Utility to rebuild PostgreSQL database objects online.
+	pg_repack is a PostgreSQL extension that lets you remove bloat from tables and indexes.
+	Restore the physical order of clustered indexes.
+	pg_repack is an extension available for PostgreSQL that helps rebuild a table online
+	
+Advantages of using Pg_repack
+---------------------------
+	Release storage from a table to disk/fs.
+	Rebuild a table. Reduces I/O.
+	Release storage stacked due to dead tuples as blotted and not cleared by the autovacuum process
+	
+Demo on pg_repack
+----------------
+	How to install pg_repack
+	How to bind it to the database.
+	How to rebuild online Using pg_repack
+	
+Step 1.How to Install pg repack extension on RHEL 7.5.
+------------------------------------------------------
+	
+	yum install pg_repack12
+	sudo su - postgres
+	psql
+	psql#set shared_preload_libraries = 'pg repack';
+
+	/usr/pgsql-12/bin/pg_ctl -D $PGDATA restart -mf  <-- -mf (mode force) for immediate restart like shut abort
+
+Step 2. Create this extension in database/s where you are planning to execute it.
+---------------------------------------------------------------------------------
+
+	sudo su - postgres
+	psql
+	postgres \c dvdrental;
+	postgres CREATE EXTENSION pg_repack;
+
+Step 3. pg repack utility to rebuild tables online.
+--------------------------------------------------
+
+	$ /usr/pgsql-12/bin/pg_repack --dry-run -d dvdrental --table actor 
+	$ /usr/pgsql-12/bin/pg_repack -d dvdrental --table actor	
+	
+	or 
+	
+To Rebuild an Entire Database  :
+
+	export PATH=$PATH:/usr/pgsql-12/bin
+	
+	pg_repack-dry-run-d dvdrental
+
+		(dry run)
+
+	pg repack-d dvdrental - 2 (actual run)
+
+	This can also be run remotely, provided the version of pg repack is the same.
+
+Appendix
+--------
+	DROP EXTENSION pg repack;
+	yum remove pg_repack12
+		
+	
+	
+	
+	
