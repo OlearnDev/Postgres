@@ -2661,11 +2661,11 @@ To Rebuild an Entire Database  :
 
 	export PATH=$PATH:/usr/pgsql-12/bin
 	
-	pg_repack-dry-run-d dvdrental
+	pg_repack --dry-run -d dvdrental
 
 		(dry run)
 
-	pg repack-d dvdrental - 2 (actual run)
+	pg repack -d dvdrental -j 2 		<--  -j 2 to run in parallel with 2 threads
 
 	This can also be run remotely, provided the version of pg repack is the same.
 
@@ -2674,7 +2674,104 @@ Appendix
 	DROP EXTENSION pg repack;
 	yum remove pg_repack12
 		
-	
+
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.39: DBlink in PostgreSQL  
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+dblink is a module that supports connections to other PostgreSQL databases from within a database session.
+postgres_fdw, which provides roughly the same functionality using a more modern and standards-compliant infra.
+'DB Link' in PostgreSQL enables a database user to access a table present on a different Postgres instance. 
+  It provides functionality in PostgreSQL to connect other databases in another instance.
+
+Demo:
+-----
+Access a table student residing on 192.1681.1.116@targetdb:target:student via 192.1681.1.113@sourcedb:source
+
+Setup
+-----
+Source 192.168.1.113
+
+	Install the following extension on source
+
+	sudo yum install postgresql13-contrib
+
+Target 192.168.1.116
+
+	Plugin required: PostgreSQL package 'postgresql-contrib' needs to be installed
+	Remote access enabled. User should be able to connect to the remote database from the source host.
+	Credentials: User credentials (user, password, port, and hostname) of the user who accesses the table on 
+	    the remote database are needed.
+
+Source server setup
+------------------
+	drop user source;
+	drop database source_db;
+	postgres #create user source PASSWORD 'source';
+	postgres #alter user source with superuser;
+	postgres #create database source_db owner source;
+
+Cross test if connectivity is successful remotely
+-------------------------------------------------
+Issue the same command on source and target to see if you can connect to source_db from both nodes:
+
+	psql -h 192.168.1.113 -d source_db -U source
+
+Target Setup
+
+Cleanup if tested earlier
+
+	drop user target;
+	drop database targetdb;
+	postgres#
+	postgres# create user target PASSWORD 'target';
+	postgres# create database targetdb OWNER target;
+
+Cross test if connectivity is successful remotely
+------------------------------------------------
+
+	psql -h 192.168.1.116 -d targetdb -U target
+
+	CREATE TABLE student (student_id int, student_name text);
+	INSERT INTO student (student_id, student_name) VALUES (00001, 'student_name1');
+	select foom student
+
+Finish the initial setup on source before moving to the next step
+-----------------------------------------------------------------
+
+source# CREATE EXTENSION dblink;
+source# CREATE SERVER server_target_remote FOREIGN DATA WRAPPER dblink_fdw OPTIONS (host '192.168.1.116', dbname 'targetdb', port '5432'
+source# CREATE USER MAPPING FOR source SERVER server_target_remote OPTIONS (user 'target', password 'target');
+source# GRANT USAGE ON FOREIGN SERVER server_target_remote TO source;
+
+Establish a connection
+----------------------
+Establish a connection to the foreign server using the dblink_connect() function
+
+source# SELECT dblink_connect('conn_db_link', 'server_target_remote');
+source# SELECT from dblink ('conn_db_link', 'select from student') as test (student_id int, student_name text);
+
+source_db=# SELECT dblink_connect('conn_db_link', 'server_target_remote');
+
+	dblink connect
+	------------
+	OK
+
+	(1 go)
+
+source_db=# SELECT * from dblink ('conn_db_link', 'select * from student') as test (student_id int, student_name text);
+
+	student_id | student_name
+	------------
+	   1 	   | student_namel
+
+	(1 go)
+
+source_db=#
+
+
 	
 	
 	
