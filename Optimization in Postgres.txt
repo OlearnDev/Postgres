@@ -1,7 +1,9 @@
 ---- Optimization in Postgres --------------------
 
-The different phases for optimizing and running a query in PostgreSQL
---------------------------------------------------------------------
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.1 : The different phases for optimizing and running a query in PostgreSQL
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
 PostgreSQL has a very well-defined process for handling a query, from the moment it receives a string of text 
 until it returns the final result. Understanding these phases is crucial for performance tuning.
 
@@ -110,3 +112,143 @@ The journey of a query can be summarized in four main stages:
 		Memory & Disk: For sorting, hashing, and temp storage of large result sets that don''t fit in work_mem.
 
 	Once all rows are processed, the result set is returned to the client, and the query is complete.
+	
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.2 : Prepared Statement
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+1. What is a Prepared Statement?
+--------------------
+	A prepared statement is a server-side object that allows you to pre-compile a SQL query template, separating 
+	its structure from its parameters.
+
+	Think of it like a form with blanks:
+
+		- The form itself is the prepared statement: "SELECT * FROM users WHERE country = $1 AND status = $2".
+		- The values you fill in the blanks ($1, $2) are the parameters you supply each time you execute it: 
+		  e.g., ('USA', 'active').
+
+	This separation of the query structure from its parameters is the core concept.
+
+2. How It Works: The Two-Phase Process
+----------------------------------------
+
+Using a prepared statement is a two-step process:
+
+	- PREPARE: You send the template to the server. PostgreSQL parses the query (checks syntax) and plans it 
+	(generates the execution plan). This pre-compiled statement is stored in your session''s memory under a name
+	you give it.
+
+	- EXECUTE: You send the name of the prepared statement and the parameters. PostgreSQL executes the plan 
+	  using the new parameters, skipping the parsing and planning phases.
+
+Visual Workflow:
+
+	-- STEP 1: PREPARE (happens once)
+	-- Server: Parses, Plans, and Saves the plan as "user_query"
+	PREPARE user_query (TEXT, TEXT) AS
+	SELECT user_id, name FROM users WHERE country = $1 AND status = $2;
+
+	-- STEP 2: EXECUTE (happens many times)
+	-- Server: Executes the cached plan instantly with new parameters.
+	EXECUTE user_query ('USA', 'active');
+	EXECUTE user_query ('GB', 'inactive');
+	EXECUTE user_query ('FR', 'active');
+	
+	
+3. The Key Detail: Generic vs. Custom Plans
+--------------------------------------------
+
+PostgreSQL doesn''t blindly use the same plan for every parameter. It has a sophisticated adaptive system:
+
+	1.First 5 Executions: For the first five EXECUTE commands, the planner generates a custom plan each time. 
+	  It "sniffs" the provided parameter values and creates a plan optimized for those specific values. 
+	  (e.g., it might use an index for a selective value like 'active' but choose a sequential scan for a very 
+	  common value like 'pending').
+
+	2.After 5 Executions: The planner now has enough data. It calculates the average cost of the custom plans 
+	and compares it to the cost of a generic plan (a one-size-fits-all plan that doesn''t rely on specific 
+	parameter values).
+
+	3.The Decision: If the generic plan''s cost is not significantly worse, PostgreSQL switches to using the 
+	generic, cached plan for all subsequent EXECUTE calls for the lifetime of the prepared statement. 
+	This avoids the overhead of planning every single time.
+
+You can influence this behavior with the plan_cache_mode setting:
+
+	- auto (default): The behavior described above.
+	- force_custom_plan: Always prefer custom plans (useful if plans vary wildly).
+	- force_generic_plan: Force the use of a generic plan.
+
+4. Why Use Prepared Statements? (Benefits)
+------------------------------------------
+
+	1.Performance: The primary benefit. By reusing the parsed and planned query, you eliminate repetitive 
+	parsing and planning overhead. This is a huge win for short, frequently-run queries.
+
+	2.Security: Prevention of SQL Injection Attacks: This is critical. Because parameters are sent to the 
+	pre-compiled template after the structure is defined, they are treated purely as data, not as part of the 
+	SQL code. It is impossible for malicious parameter values to alter the structure of the query.
+
+	DANGEROUS (Concatenation):
+
+		query = "SELECT * FROM users WHERE name = '" + user_input + "';"
+		#-- If user_input is "'; DROP TABLE users; --", you''re in trouble.
+
+	SAFE (Prepared Statement / Parameterized Query):
+
+		#-- The structure is fixed. The user input is just data for the $1 slot.
+		query = "SELECT * FROM users WHERE name = $1;"
+		cursor.execute(query, (user_input,))
+	
+	3.Convenience: It provides a clean way to handle queries that are run repeatedly with different values.
+
+5. How to Use Them
+------------------
+
+	1. Explicitly with SQL (as shown above):
+
+		PREPARE my_plan (INT) AS UPDATE accounts SET balance = balance - $1 WHERE id = 123;
+		EXECUTE my_plan (100);
+		EXECUTE my_plan (50);
+		DEALLOCATE my_plan; -- Frees the prepared statement from memory
+		
+	Lifetime: Explicitly prepared statements exist for the duration of the current database session. They are 
+	destroyed when you disconnect.
+
+	2. Implicitly via Application Drivers (Most Common Method):
+	
+	You almost never write PREPARE and EXECUTE yourself. Instead, you use your programming language''s database 
+	driver, which uses the protocol behind the scenes.
+
+	In Python (with psycopg2):
+
+	#-- The driver automatically creates a prepared statement internally
+	cur = conn.cursor()
+	cur.execute("SELECT * FROM users WHERE email = %s AND status = %s", (email, status))
+	
+	In Java (with JDBC):
+
+	//-- The PreparedStatement interface does this for you.
+	PreparedStatement stmt = conn.prepareStatement("SELECT * FROM users WHERE email = ? AND status = ?");
+	stmt.setString(1, "user@example.com");
+	stmt.setString(2, "active");
+	ResultSet rs = stmt.executeQuery();
+	
+	This protocol-level preparation is often called an "unnamed prepared statement" and is the most efficient 
+	and common way to benefit from this feature.
+
+Summary
+--------
+Aspect			Description
+What			A pre-compiled SQL template with parameter placeholders.
+How	PREPARE 	(parse & plan) once, then EXECUTE (run) many times.
+Key Feature		Adaptive planning: chooses between custom and generic plans.
+Benefit #1		Performance: Reduces parsing and planning overhead.
+Benefit #2		Security: Virtually eliminates SQL injection by separating code from data.
+Usage			Mostly used implicitly via parameterized queries in application code.
+
+Prepared statements are a cornerstone of writing efficient, secure, and professional database-driven 
+applications. You should always use parameterized queries (which use prepared statements) instead of string 
+concatenation when including user input in a query.
+
