@@ -140,8 +140,9 @@ work_mem Space		 - Used for sorting, bitmap operations, hash joins, and merge jo
 Maintenance_work_mem - Space used for Vacuum and Create Index. The default setting is 64 MB.
 Temp_buffers		 - Space used for temporary tables. The default setting is 8 MB				
 
-
-3.Installation of postgresql ------------------------------------------------------------------
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.3.Installation of postgresql 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 Installation Directory: C:\Program Files\PostgreSQL\17
 Server Installation Directory: C:\Program Files\PostgreSQL\17
