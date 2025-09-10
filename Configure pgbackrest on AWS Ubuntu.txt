@@ -1,0 +1,108 @@
+		Configure pgbackrest on postgres on AWS EC2 Ubuntu
+
+			aws ec2 instance: ec2-15-222-242-106.ca-central-1.compute.amazonaws.com
+			key : postgresvm1_key.pem
+
+1) Connect to ssh via aws cloud shell 
+
+	- Click connect to Open cloud shell. You are connect as "cloudshell-user"
+	- Upload and Locate your private key file. The key used to launch this instance is postgresvm1_key.pem
+	- Run this command :
+	
+		chmod 400 "postgresvm1_key.pem"
+
+	- Connect to your instance using its Public DNS:
+	
+		ssh -i "postgresvm1_key.pem" ubuntu@ec2-15-222-242-106.ca-central-1.compute.amazonaws.com
+
+2) Install pgbackrest 
+	
+	On ubuntu, use : 
+	
+		ubuntu@ip-172-31-12-104:~$ sudo apt install pgbackrest 
+		
+		$ ls -ltrh /usr/bin/pgbackrest
+			
+			-rwxr-xr-x 1 root root 1.3M Apr  1  2024 /usr/bin/pgbackrest
+	
+Enable sudo access to Postgres
+------------
+	sudo vi /etc/sudoers
+
+	Search for section "NOPASSWD" in the file :
+
+	/NOPASSWD
+
+	Add this line :
+	Postgres	ALL=(ALL) NOPASSWD: ALL
+		
+3) Create directories
+
+	sudo su - postgres
+	sudo mkdir -p -m 770 /var/log/pgbackrest
+	sudo chown postgres:postgres /var/log/pgbackrest
+	sudo mkdir -p /etc/pgbackrest
+	sudo mkdir -p /etc/pgbackrest/conf.d
+	sudo touch /etc/pgbackrest/pgbackrest.conf
+	sudo chmod 640 /etc/pgbackrest/pgbackrest.conf
+	sudo chown postgres:postgres /etc/pgbackrest/pgbackrest.conf
+	
+	sudo bash -c 'cat <<< EOF > /etc/pgbackrest/pgbackrest.conf
+	[global]
+	repo1-path=/var/lib/pgbackrest
+	repo1-retention-full=2				 
+
+	[Pgems]								 
+	pg1-path=/var/lib/pgsql/13/data
+	pg1-port=5432
+	EOF'
+	
+	postgres@ip-172-31-12-104:~$ cat /etc/pgbackrest/pgbackrest.conf
+	
+	[global]
+	repo1-path=/var/lib/pgbackrest
+	repo1-retention-full=2                           
+
+	[Pgems]                                                          
+	pg1-path=/var/lib/pgsql/13/data
+	pg1-port=5432
+
+Edit .bash_profile for postgres :
+
+	$cd
+	$vi .bash_profile
+	
+		export PGDATA=/var/lib/postgresql/16/main
+		export PATH=$PATH:/usr/lib/postgresql/16/bin
+	$. .bash_profile
+	
+Create the demo cluster : 
+
+	$sudo -u postgres 
+	$/usr/lib/postgresql/16/bin/initdb -D /var/lib/postgresql/16/demo -k -A peer
+	
+		The files belonging to this database system will be owned by user "postgres".
+		This user must also own the server process.
+
+		The database cluster will be initialized with locale "C.UTF-8".
+		The default database encoding has accordingly been set to "UTF8".
+		The default text search configuration will be set to "english".
+
+		Data page checksums are enabled.
+
+		creating directory /var/lib/postgresql/16/demo ... ok
+		creating subdirectories ... ok
+		selecting dynamic shared memory implementation ... posix
+		selecting default max_connections ... 100
+		selecting default shared_buffers ... 128MB
+		selecting default time zone ... Etc/UTC
+		creating configuration files ... ok
+		running bootstrap script ... ok
+		performing post-bootstrap initialization ... ok
+		syncing data to disk ... ok
+
+		Success. You can now start the database server using:
+
+			/usr/lib/postgresql/16/bin/pg_ctl -D /var/lib/postgresql/16/demo -l logfile start
+
+postgres@ip-172-31-12-104:~$
