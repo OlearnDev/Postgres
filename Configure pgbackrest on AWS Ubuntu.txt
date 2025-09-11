@@ -19,7 +19,7 @@
 	
 	On ubuntu, use : 
 	
-		ubuntu@ip-172-31-12-104:~$ sudo apt install pgbackrest 
+		ubuntu$ sudo apt install pgbackrest 
 		
 		$ ls -ltrh /usr/bin/pgbackrest
 			
@@ -47,26 +47,6 @@ Enable sudo access to Postgres
 	sudo chmod 640 /etc/pgbackrest/pgbackrest.conf
 	sudo chown postgres:postgres /etc/pgbackrest/pgbackrest.conf
 	
-	sudo bash -c 'cat <<< EOF > /etc/pgbackrest/pgbackrest.conf
-	[global]
-	repo1-path=/var/lib/pgbackrest
-	repo1-retention-full=2				 
-
-	[Pgems]								 
-	pg1-path=/var/lib/pgsql/13/data
-	pg1-port=5432
-	EOF'
-	
-	postgres@ip-172-31-12-104:~$ cat /etc/pgbackrest/pgbackrest.conf
-	
-	[global]
-	repo1-path=/var/lib/pgbackrest
-	repo1-retention-full=2                           
-
-	[Pgems]                                                          
-	pg1-path=/var/lib/pgsql/13/data
-	pg1-port=5432
-
 Edit .bash_profile for postgres :
 
 	$cd
@@ -74,9 +54,10 @@ Edit .bash_profile for postgres :
 	
 		export PGDATA=/var/lib/postgresql/16/main
 		export PATH=$PATH:/usr/lib/postgresql/16/bin
+	
 	$. .bash_profile
 	
-Create the demo cluster : 
+4) Create the demo cluster : 
 
 	$sudo -u postgres 
 	$/usr/lib/postgresql/16/bin/initdb -D /var/lib/postgresql/16/demo -k -A peer
@@ -105,4 +86,371 @@ Create the demo cluster :
 
 			/usr/lib/postgresql/16/bin/pg_ctl -D /var/lib/postgresql/16/demo -l logfile start
 
+postgres$ sudo pg_createcluster 16 demo
+
+	Configuring already existing cluster (configuration: /etc/postgresql/16/demo, data: /var/lib/postgresql/16/demo, owner: 111:114)
+	
+	Ver Cluster Port Status Owner    Data directory              Log file
+	16  demo    5433 down   postgres /var/lib/postgresql/16/demo /var/log/postgresql/postgresql-16-demo.log
+
+postgres$
+
+5) Configure Cluster Stanza
+
+A stanza is the configuration for a PostgreSQL database cluster that defines where it is located, how it will 
+be backed up, archiving options, etc. 
+Most db servers will only have one PostgreSQL database cluster and therefore one stanza, whereas backup servers 
+will have a stanza for every database cluster that needs to be backed up.
+
+
+		
+
+6) Create the Repository
+
+The repository is where pgBackRest stores backups and archives WAL segments.
+
+	$sudo mkdir -p /var/lib/pgbackrest
+	$sudo chmod 750 /var/lib/pgbackrest
+	$sudo chown postgres:postgres /var/lib/pgbackrest
+
+7) Configure Archiving
+
+Backing up a running PostgreSQL cluster requires WAL archiving to be enabled. Note that at least one WAL 
+segment will be created during the backup process even if no explicit writes are made to the cluster.
+
+	$vi /etc/postgresql/16/demo/postgresql.conf
+	
+		archive_command = 'pgbackrest --stanza=demo archive-push %p'
+		archive_mode = on
+		max_wal_senders = 3
+		wal_level = replica
+
+	- %p is how PostgreSQL specifies the location of the WAL segment to be archived. 
+	- Setting wal_level to at least replica and increasing max_wal_senders is a good idea even if there are 
+	  currently no replicas as this will allow them to be added later without restarting the primary cluster.
+
+Restart cluster : 
+
+	$sudo pg_ctlcluster 16 demo restart
+
+NB: 1)The key difference is that pg_ctlcluster is a distribution-specific wrapper designed to manage multiple 
+    PostgreSQL clusters, while systemctl is the universal Linux system and service manager.
+	A "cluster" here refers to a separate PostgreSQL instance with its own data directory, port, and configuration.
+	
+		sudo pg_ctlcluster 16 main restart
+		sudo pg_ctlcluster 14 main status
+
+	2)When archiving a WAL segment is expected to take more than 60 seconds (the default) to reach the 
+	  pgBackRest repository, then the pgBackRest archive-timeout option should be increased. 
+	  Note that this option is not the same as the PostgreSQL archive_timeout option which is used to force a 
+	  WAL segment switch;
+	  
+	3)The archive-push command can be configured with its own options. For example, a lower compression level 
+	  may be set to speed archiving without affecting the compression used for backups.
+
+	In /etc/pgbackrest/pgbackrest.conf, add: 
+	
+		[global:archive-push]
+		compress-level=3
+
+	This config technique can be used for any command and can even target a specific stanza, e.g. demo:archive-push.
+	
+8) Configure Repository Encryption
+
+The repository will be configured with a cipher type and key to demonstrate encryption. 
+Encryption is always performed client-side even if the repository type (e.g. S3 or other object store) supports 
+encryption.
+
+It is important to use a long, random passphrase for the cipher key. A good way to generate one is to run: 
+  
+  openssl rand -base64 48.
+  
+  NB: Once the repository has been configured and the stanza created and checked, the repository encryption 
+      settings cannot be changed.
+	 
+	[demo]
+	pg1-path=/var/lib/postgresql/16/demo
+
+	[global]
+	repo1-cipher-pass=zWaf6XtpjIVZC5444yXB+cgFDFl7MxGlgkZSaoPvTGirhPygu4jOKOXf9LO4vjfO
+	repo1-cipher-type=aes-256-cbc
+	repo1-path=/var/lib/pgbackrest
+	repo1-retention-full=2
+
+	[global:archive-push]
+	compress-level=3
+
+9) Create the Stanza
+  The stanza-create command must be run to initialize the stanza. 
+  
+  	$su postgres
+	$sudo -u postgres pgbackrest stanza-create --stanza=demo --log-level-console=info   
+	
+   NB: "info" and "error" provide basic info of start and end and errors only during pgbackrest operations. 
+	For more details, choose option like "debug" or "trace".
+
+  It is recommended that the check command be run after stanza-create to ensure archiving and backups are 
+  properly configured.
+ 
+We have actually 2 clusters running: main and demo: 
+ 
+postgres@ip-172-31-12-104:~$ ps -ef|grep postgresql
+postgres   47783       1  0 Sep09 ?        00:00:05 /usr/lib/postgresql/16/bin/postgres -D /var/lib/postgresql/16/main -c config_file=/etc/postgresql/16/main/postgresql.conf
+postgres   61044       1  0 18:33 ?        00:00:00 /usr/lib/postgresql/16/bin/postgres -D /var/lib/postgresql/16/demo -c config_file=/etc/postgresql/16/demo/postgresql.conf
+postgres   61330   60997  0 19:23 pts/3    00:00:00 grep postgresql
+postgres@ip-172-31-12-104:~
+
+postgres@ip-172-31-12-104:~$ pg_lsclusters
+Ver Cluster Port Status Owner    Data directory              Log file
+16  demo    5433 online postgres /var/lib/postgresql/16/demo /var/log/postgresql/postgresql-16-demo.log
+16  main    5432 online postgres /var/lib/postgresql/16/main /var/log/postgresql/postgresql-16-main.log
 postgres@ip-172-31-12-104:~$
+
+To be sure to start stanza demo running on non-default port 5433, we need to specify the port in config file:
+
+	$vi /etc/pgbackrest/pgbackrest.conf
+
+	[demo]
+	pg1-path=/var/lib/postgresql/16/demo
+	pg1-port=5433
+
+	[global]
+	repo1-cipher-pass=zWaf6XtpjIVZC5444yXB+cgFDFl7MxGlgkZSaoPvTGirhPygu4jOKOXf9LO4vjfO
+	repo1-cipher-type=aes-256-cbc
+	repo1-path=/var/lib/pgbackrest
+	repo1-retention-full=2
+
+	[global:archive-push]
+	compress-level=3
+
+
+postgres@ip-172-31-12-104:~$ sudo -u postgres pgbackrest --stanza=demo --log-level-console=info stanza-create
+2025-09-10 19:45:03.804 P00   INFO: stanza-create command begin 2.50: --exec-id=61441-8f60e908 --log-level-console=info --pg1-path=/var/lib/postgresql/16/demo --pg1-port=5433 --repo1-cipher-pass=<redacted> --repo1-cipher-type=aes-256-cbc --repo1-path=/var/lib/pgbackrest --stanza=demo
+2025-09-10 19:45:04.411 P00   INFO: stanza-create for stanza 'demo' on repo1
+2025-09-10 19:45:04.433 P00   INFO: stanza-create command end: completed successfully (631ms)
+postgres@ip-172-31-12-104:~$
+
+10)Check the Configuration
+
+	- The check command validates that pgBackRest and the archive_command setting are configured correctly for 
+	  archiving and backups for the specified stanza. 
+	- It will attempt to check all repositories and databases that are configured for the host on which the 
+	  command is run.
+	- Note that pg_create_restore_point('pgBackRest Archive Check') and pg_switch_xlog()/pg_switch_wal() are 
+	  called to force PostgreSQL to archive a WAL segment
+
+postgres@ip-172-31-12-104:~$ sudo -u postgres pgbackrest --stanza=demo --log-level-console=info check
+2025-09-10 19:49:41.765 P00   INFO: check command begin 2.50: --exec-id=61477-fa0b4350 --log-level-console=info --pg1-path=/var/lib/postgresql/16/demo --pg1-port=5433 --repo1-cipher-pass=<redacted> --repo1-cipher-type=aes-256-cbc --repo1-path=/var/lib/pgbackrest --stanza=demo
+2025-09-10 19:49:42.370 P00   INFO: check repo1 configuration (primary)
+2025-09-10 19:49:42.571 P00   INFO: check repo1 archive for WAL (primary)
+2025-09-10 19:49:42.873 P00   INFO: WAL segment 000000010000000000000001 successfully archived to '/var/lib/pgbackrest/archive/demo/16-1/0000000100000000/000000010000000000000001-1aea20429401fcad6881f3239ed2a6d213ceff8f.gz' on repo1
+2025-09-10 19:49:42.873 P00   INFO: check command end: completed successfully (1110ms)
+postgres@ip-172-31-12-104:~$ 
+
+postgres@ip-172-31-12-104:~$ ls -ltrh /var/lib/pgbackrest/archive/demo
+total 12K
+-rw-r----- 1 postgres postgres  368 Sep 10 19:45 archive.info
+-rw-r----- 1 postgres postgres  368 Sep 10 19:45 archive.info.copy
+drwxr-x--- 3 postgres postgres 4.0K Sep 10 19:49 16-1
+postgres@ip-172-31-12-104:~$ 
+postgres@ip-172-31-12-104:~$ ls -ltrh /var/lib/pgbackrest/archive/demo/16-1/
+total 4.0K
+drwxr-x--- 2 postgres postgres 4.0K Sep 10 19:49 0000000100000000
+postgres@ip-172-31-12-104:~$
+
+11)Perform a Backup
+
+	- By default pgBackRest will wait for the next regularly scheduled checkpoint before starting a backup. 
+	- Depending on the checkpoint_timeout and checkpoint_segments settings in PostgreSQL it may be quite some time
+	  before a checkpoint completes and the backup can begin. Generally, it is best to set start-fast=y so that 
+	  the backup starts immediately. 
+	- This forces a checkpoint, but since backups are usually run once a day an additional checkpoint should not
+	  have a noticeable impact on performance. However, on very busy clusters it may be best to pass 
+	  --start-fast on the command-line as needed.  
+	 
+	 $vi /etc/pgbackrest/pgbackrest.conf
+
+	[demo]
+	pg1-path=/var/lib/postgresql/16/demo
+	pg1-port=5433
+
+	[global]
+	repo1-cipher-pass=zWaf6XtpjIVZC5444yXB+cgFDFl7MxGlgkZSaoPvTGirhPygu4jOKOXf9LO4vjfO
+	repo1-cipher-type=aes-256-cbc
+	repo1-path=/var/lib/pgbackrest
+	repo1-retention-full=2
+	start-fast=y						**
+
+	[global:archive-push]
+	compress-level=3
+	
+To perform a backup of the PostgreSQL cluster run pgBackRest with the backup command.
+
+   $sudo -u postgres pgbackrest --stanza=demo --log-level-console=info backup
+   
+	2025-09-10 19:58:03.356 P00   INFO: backup command begin 2.50: --exec-id=61541-1c3e7bfe --log-level-console=info --pg1-path=/var/lib/postgresql/16/demo --pg1-port=5433 --repo1-cipher-pass=<redacted> --repo1-cipher-type=aes-256-cbc --repo1-path=/var/lib/pgbackrest --repo1-retention-full=2 --stanza=demo --start-fast
+	WARN: no prior backup exists, incr backup has been changed to full
+	2025-09-10 19:58:04.061 P00   INFO: execute non-exclusive backup start: backup begins after the requested immediate checkpoint completes
+	2025-09-10 19:58:04.463 P00   INFO: backup start archive = 000000010000000000000003, lsn = 0/3000028
+	2025-09-10 19:58:04.463 P00   INFO: check archive for prior segment 000000010000000000000002
+	2025-09-10 19:58:09.222 P00   INFO: execute non-exclusive backup stop and wait for all WAL segments to archive
+	2025-09-10 19:58:09.423 P00   INFO: backup stop archive = 000000010000000000000003, lsn = 0/3000138
+	2025-09-10 19:58:09.426 P00   INFO: check archive for segment(s) 000000010000000000000003:000000010000000000000003
+	2025-09-10 19:58:09.435 P00   INFO: new backup label = 20250910-195803F
+	2025-09-10 19:58:09.469 P00   INFO: full backup size = 22.1MB, file total = 963
+	2025-09-10 19:58:09.469 P00   INFO: backup command end: completed successfully (6117ms)
+	2025-09-10 19:58:09.469 P00   INFO: expire command begin 2.50: --exec-id=61541-1c3e7bfe --log-level-console=info --repo1-cipher-pass=<redacted> --repo1-cipher-type=aes-256-cbc --repo1-path=/var/lib/pgbackrest --repo1-retention-full=2 --stanza=demo
+	2025-09-10 19:58:09.475 P00   INFO: expire command end: completed successfully (6ms)
+	postgres@ip-172-31-12-104:~$ 
+	
+By default pgBackRest will attempt to perform an incremental backup. However, an incremental backup must be 
+based on a full backup and since no full backup existed pgBackRest ran a full backup instead.
+
+The type option can be used to specify a full or differential backup: 
+
+	$sudo -u postgres pgbackrest --stanza=demo --type=diff --log-level-console=info backup
+
+To verify backup related information : 
+
+	postgres@ip-172-31-12-104:~$ pgbackrest info
+	stanza: demo
+		status: ok
+		cipher: aes-256-cbc
+
+		db (current)
+			wal archive min/max (16): 000000010000000000000001/000000010000000000000003
+
+			full backup: 20250910-195803F
+				timestamp start/stop: 2025-09-10 19:58:03+00 / 2025-09-10 19:58:09+00
+				wal start/stop: 000000010000000000000003 / 000000010000000000000003
+				database size: 22.1MB, database backup size: 22.1MB
+				repo1: backup set size: 3.0MB, backup size: 3.0MB
+	postgres@ip-172-31-12-104:~$ 
+
+12) Schedule a Backup
+
+	#m h   dom mon dow   command
+	30 06  *   *   0     pgbackrest --type=full --stanza=demo backup
+	30 06  *   *   1-6   pgbackrest --type=diff --stanza=demo backup
+
+13) Restore a Backup
+
+	 Stop the demo cluster and delete the pg_control file
+
+		$sudo pg_ctlcluster 16 demo stop
+		$sudo -u postgres rm /var/lib/postgresql/16/demo/global/pg_control
+
+	 Remove old files from demo cluster
+
+		sudo -u postgres find /var/lib/postgresql/16/demo -mindepth 1 -delete
+
+	 Restore the demo cluster and start PostgreSQL
+		
+		sudo -u postgres pgbackrest --stanza=demo restore
+		sudo pg_ctlcluster 16 demo start
+	
+  This time the cluster started successfully since the restore replaced the missing pg_control file.
+  
+14) Monitoring with Postgres 
+
+ The monitor.pgbackrest_info() function can be used to determine the last successful backup time and archived WAL 
+ for a stanza.
+ 
+On pg-primary: 
+		Query last successful backup time and archived WAL
+		
+		sudo -u postgres cat /var/lib/postgresql/pgbackrest/doc/example/pgsql-pgbackrest-query.sql
+		
+15) Block Incremental
+
+	Block incremental backups save space by only storing the parts of a file that have changed since the 
+	prior backup rather than storing the entire file.
+	The block incremental feature is enabled with the repo-block option and it works best when enabled for 
+	all backup types. File bundling must also be enabled.
+	
+pg-primary:/etc/pgbackrest/pgbackrest.conf ⇒ Configure repo1-block
+
+	[demo]
+	pg1-path=/var/lib/postgresql/16/demo
+
+	[global]
+	repo1-block=y			**
+	repo1-bundle=y
+	repo1-cipher-pass=zWaf6XtpjIVZC5444yXB+cgFDFl7MxGlgkZSaoPvTGirhPygu4jOKOXf9LO4vjfO
+	repo1-cipher-type=aes-256-cbc
+	repo1-path=/var/lib/pgbackrest
+	repo1-retention-full=2
+	repo1-retention-diff=1			-- For diff backup retention (Here 2 diff will need to be performed before one is expired)
+	start-fast=y
+
+	[global:archive-push]
+	compress-level=3
+
+16) Backup Annotations
+
+	Users can attach informative key/value pairs to the backup. This option may be used multiple times to attach 
+	multiple annotations.
+
+ pg-primary ⇒ Perform a full backup with annotations
+
+	sudo -u postgres pgbackrest --stanza=demo --annotation=source="demo backup" \
+		   --annotation=key=value --type=full backup
+
+  Annotations are output by the info command text output when a backup is specified with --set 
+  and always appear in the JSON output.
+
+ pg-primary ⇒ Get info for the demo cluster
+
+	sudo -u postgres pgbackrest --stanza=demo --set=20250721-130254F info	
+
+17) Restore Delta Option
+
+  - Restore a Backup in Quick Start required the database cluster directory to be cleaned before the restore could 
+    be performed. 
+  - The delta option allows pgBackRest to automatically determine which files in the database cluster directory can 
+    be preserved and which ones need to be restored from the backup — 
+  - It also removes files not present in the backup manifest so it will dispose of divergent changes.	
+
+		$sudo pg_ctlcluster 16 demo stop
+		$sudo -u postgres pgbackrest --stanza=demo --delta --log-level-console=detail restore
+
+18) Restore Selected Databases
+
+	There may be cases where it is desirable to selectively restore specific databases from a cluster backup. 
+	This could be done for performance reasons or to move selected databases to a machine that does not have 
+	enough space to restore the entire cluster backup.
+	
+	To demonstrate this feature two databases are created: test1 and test2.
+	
+		sudo -u postgres psql -c "create database test1;"
+		sudo -u postgres psql -c "create database test2;"
+
+ Each test database will be seeded with tables and data to demonstrate that recovery works with selective restore.
+ 
+ Create a test table in each database
+	
+		sudo -u postgres psql -c "create table test1_table (id int); \
+			   insert into test1_table (id) values (1);" test1
+				
+				CREATE TABLE
+				INSERT 0 1
+	
+		sudo -u postgres psql -c "create table test2_table (id int); \
+			   insert into test2_table (id) values (2);" test2
+			   
+				CREATE TABLE
+				INSERT 0 1
+				
+  A fresh backup is run so pgBackRest is aware of the new databases.
+	
+		sudo -u postgres pgbackrest --stanza=demo --type=incr backup
+	
+  One of the main reasons to use selective restore is to save space. The size of the test1 database is shown here 
+  so it can be compared with the disk utilization after a selective restore.
+  
+  Show space used by test1 database
+  
+	sudo -u postgres du -sh /var/lib/postgresql/16/demo/base/32768
+	
+	7.4M	/var/lib/postgresql/16/demo/base/32768
+
