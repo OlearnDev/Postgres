@@ -454,3 +454,88 @@ pg-primary:/etc/pgbackrest/pgbackrest.conf ⇒ Configure repo1-block
 	
 	7.4M	/var/lib/postgresql/16/demo/base/32768
 
+  If the database to restore is not known, use the "info" command set option to discover databases that are part 
+  of the backup set.
+
+  Show database list for backup
+
+	sudo -u postgres pgbackrest --stanza=demo --set=20250721-130301F_20250721-130320I info
+
+19) Stop the cluster and restore only the test2 database. Built-in databases (template0, template1, and postgres) 
+    are always restored.
+
+	WARNING:
+	-------
+	Recovery may error unless "--type=immediate" is specified. This is because after consistency is reached 
+	PostgreSQL will flag zeroed pages as errors even for a full-page write. For PostgreSQL ≥ 13 the 
+	ignore_invalid_pages setting may be used to ignore invalid pages. 
+	In this case it is important to check the logs after recovery to ensure that no invalid pages were reported 
+	in the selected databases.
+
+  Restore from last backup including only the test2 database
+  
+	sudo pg_ctlcluster 16 demo stop
+	sudo -u postgres pgbackrest --stanza=demo --delta \
+		   --db-include=test2 --type=immediate --target-action=promote restore
+		   
+	sudo pg_ctlcluster 16 demo start
+
+ Once recovery is complete the test2 database will contain all previously created tables and data.
+
+ Demonstrate that the test2 database was recovered
+
+	sudo -u postgres psql -c "select * from test2_table;" test2
+		 id 
+		----
+		  2
+		(1 row)
+
+ NB: The test1 database, despite successful recovery, is not accessible. This is because the entire database was 
+     restored as sparse, zeroed files. 
+
+  At this point the only action that can be taken on the invalid test1 database is drop database. pgBackRest does 
+  not automatically drop the database since this cannot be done until recovery is complete and the cluster is 
+  accessible.  
+  
+  Drop the test1 database
+
+	sudo -u postgres psql -c "drop database test1;"
+
+20) Point-in-Time Recovery
+
+ Point-in-Time Recovery (PITR) allows the WAL to be played from a backup to a specified lsn, time, transaction id,
+ or recovery point. For common recovery scenarios time-based recovery is arguably the most useful. 
+ A typical recovery scenario is to restore a table that was accidentally dropped or data that was accidentally 
+ deleted. 
+ 
+ Recovering a dropped table is more dramatic so that''s the example given here but deleted data would be recovered
+ in exactly the same way.
+ 
+	Create a table with very important data
+
+	sudo -u postgres psql -c "begin; \
+       create table important_table (message text); \
+       insert into important_table values ('Important Data'); \
+       commit; \
+       select * from important_table;"
+       
+	   [filtered 4 lines of output]
+			
+			message     
+		----------------
+		 Important Data
+		   (1 row)
+
+ Get the time from PostgreSQL
+
+	sudo -u postgres psql -Atc "select current_timestamp"
+
+		2025-07-21 13:03:31.528914+00
+
+ Drop the important table
+
+	sudo -u postgres psql -c "begin; \
+		   drop table important_table; \
+		   commit; \
+		   select * from important_table;"
+
