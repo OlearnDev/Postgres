@@ -178,7 +178,7 @@ Summary below :
 ------------- Step 2 :  USING POSTGRESQL ROLE
 
 The installation procedure created a user account called postgres that is associated with the default Postgres role
-and a a sudo user.
+and a sudo user.
 
 SWITCH to POSTGRES ACCOUNT
 #sudo -u postgres
@@ -199,7 +199,7 @@ permissions.
 
 If you are logged in as the postgres account. 
 
--bash-4.2$ createuser-interactive
+-bash-4.2$ createuser --interactive
 Enter name of role to add: testuser
 Shall the new role be a superuser? (y/n) n
 Shall the new role be allowed to create databases? (y/n) n
@@ -241,23 +241,23 @@ queries such as the following:
 
 Physical Structure of Database Cluster
 --------------------------------------
-A database cluster has one directory called the base directory.
-
-And it contains further subdirectories and many files.
-When you execute initdb to initialize a new database cluster,
-A base directory is created in the directory mentioned above.
-Generally, the path of the base directory is usually set to the environment variable PGDATA.
+	- A database cluster has one directory called the base directory and it contains further subdirectories and 
+	  many files.	
+	- When you execute initdb to initialize a new database cluster, a base directory is created in the directory 
+	  mentioned above.
+	- Generally, the path of the base directory is usually set to the environment variable PGDATA.
 
 Layout of files and subdirectories under the base directory.
 ---------------------------------------------------------
-Files				Description
---------			------------
-PG_VERSION			A file containing the major version number of PostgreSQL.
-pg_hba.conf	A 		file to control PostgreSQL''s client authentication. (host base auth file)
-pg_ident.conf		A file to control PostgreSQL''s user name mapping.
-postgresql.conf		A file to set configuration parameters.
-postgresql.auto.conf A file used for storing configuration parameters that are set in ALTER SYSTEM (version 9.4 or later).
-postmaster.opts		A file recording the command line options the server was last started with
+Files					Description
+--------				------------
+	PG_VERSION				A file containing the major version number of PostgreSQL.
+	pg_hba.conf	A 			file to control PostgreSQL''s client authentication. (host base auth file)
+	pg_ident.conf			A file to control PostgreSQL''s user name mapping.
+	postgresql.conf			A file to set configuration parameters.
+	postgresql.auto.conf 	A file used for storing configuration parameters that are set in ALTER SYSTEM 
+							(version 9.4 or later).
+	postmaster.opts			A file recording the command line options the server was last started with
 
 subdirectories				description
 -------------				----------------
@@ -285,7 +285,8 @@ pg_wal/			(Version 10 or later) Subdirectory containing WAL (Write Ahead Logging
 pg_xact/		(Version 10 or later) Subdirectory containing transaction commit state data
 				It is renamed from pg_clog in Version 10.
 pg_xlog/		(Version 9.6 or earlier). Subdirectory containing WAL (Write Ahead Logging) segment files	
-
+				It is renamed to pg_wal in Version 10.
+				
 -bash-4.2$cd $PGDATA/global
 -bash-4.2$ ls
 1213  1214_fsm  1213_fsm 1214_vm  1213_vm  1232  1214  1233  1260  1260_vm  1261  2676  1261_fsm  1260_fsm  1262
@@ -293,13 +294,13 @@ pg_xlog/		(Version 9.6 or earlier). Subdirectory containing WAL (Write Ahead Log
 ...
 6100 1261_vm 6114  6115  pg_control  pg_filenode.map  pg_internal.init
 
-It is renamed to pg_wal in Version 10.
+
 
 * Files layout structure in database *
 ---------------------------------------
 
-A database is available as a subdirectory under the base subdirectory; and the database directory names are equal to 
-the respective OIDs.
+A database is available as a subdirectory under the base subdirectory; and the database directory names are equal 
+to the respective OIDs.
 
 For example :
 	psql #
@@ -312,8 +313,8 @@ Its subdirectory name is 16390.
 How is the layout of files associated with tables and indexes stored in postgres
 ------------------------------------------------------------------------------
 
-Tables and indexes are known as database objects and are internally managed by PostgreSQL as individual OIDs on file 
-systems, but the data files are managed by the variable called relfilenode.
+Tables and indexes are known as database objects and are internally managed by PostgreSQL as individual OIDs on 
+file systems, but the data files are managed by the variable called relfilenode.
 
 The relfilenode values of tables and indexes are basically the same but may match the OIDS.
 
@@ -342,6 +343,7 @@ postgres=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname 'course'
 	(1 row)
 
 Relevant PATH:
+
 	cd $PGDATA
 	cd /var/lib/pgsql/13/data/base/16391
 
@@ -352,13 +354,13 @@ Relevant PATH:
 		base/16390/16397
 		(1 row)
 
-	- When the file size of tables and indexes exceeds 1 GB, PostgreSQL creates a new file named like relfilenode.1 
-	  and uses it
+	- When the file size of tables and indexes exceeds 1 GB, PostgreSQL creates a new file named like 
+	  relfilenode.1 and uses it
 	- The maximum file size of tables and indexes can be changed using the configuration option --with-segsize 
 	  when building PostgreSQL.
 	- Each table has two associated files suffixed with '_fsm' and '_vm' respectively
-	- IT is referred to as free space map and visibility map and staires the info of the free space capacity and the 
-	  visibility on each page
+	- IT is referred to as "free space map" and "visibility map" and staires the info of the free space capacity 
+	  and the visibility on each page
 
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 Chap.34: WHAT IS PASSWORD FILE
@@ -423,13 +425,13 @@ Chap.4.MANAGING TABLESPACES
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
 
-pg_default :tablespace stores all user data.
+pg_default: tablespace stores all user data.
 pg_global : tablespace stores all global data (dictionnaire)
 
 ---------- DEFAULT STORAGE IN POSTGTRESQL
 
 pg_ctl -D data initdb
-Is -IF data
+ls -IF data
 pg_ctl -D data start
 
 When you initialize postgre, the Postgres server creates the required files in $PGDATA directory 
@@ -445,14 +447,14 @@ pg_default : tablespace is the default tablespace for users and also for templat
 
 postgres# create tablespace tbs1 location '/postgres/data/tbs1';
 postgres# \db+
-Is -l data/pg_tblspc/
+ls -l data/pg_tblspc/
 
 Creating Objects :
 
 create database dbl tablespace tbs1;
 \c dbl					-- Switch to db : db1
 
-create table tabl (a int);
+create table tab1 (a int);
 create table tab2 (a int) tablespace tbs2;
 create table tab3 (a int) tablespace pg_default;
 
