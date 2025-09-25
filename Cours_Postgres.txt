@@ -790,12 +790,12 @@ statement into the error log.
 
 Psql script:
 
-alter system, set log statement 'DDL';
+alter system set log_statement 'DDL';
 
 $sudo systemctl restart postgresql-12 
 
 $psql
-postgres# show log statement;
+postgres# show log_statement;
 
 	log_statement
 	--------
@@ -865,10 +865,10 @@ Postgres replication is the process of copying data from one database host (prim
 
 In version 9.0 (back in 2010), streaming replication was introduced.
 
-- Streaming replication in PostgreSQL works on log shipping.
-- Every transaction in PostgreSQL is written to a transaction log called WAL (write-ahead log) to achieve 
-  durability.
-- A slave uses these WAL segments to continuously replicate changes from its master.
+	- Streaming replication in PostgreSQL works on log shipping.
+	- Every transaction in PostgreSQL is written to a transaction log called WAL (write-ahead log) to achieve 
+	  durability.
+	- A slave uses these WAL segments to continuously replicate changes from its master.
 
 In streaming replication, three kinds of processes work cooperatively.
 	- A WAL sender process on the primary server sends WAL data to the standby server;
@@ -990,7 +990,7 @@ max_replication_slots = 10  -- used in our case
 # PostgreSQL 9.6 and later: one of 'replica' or 'logical'
 # ('hot_standby' will still be accepted as an alias for 'replica')
 
-wal_level = 'hot_standby'
+wal_level = 'hot_standby'  -- 'replica' is most used
 
 # Enable read-only queries on a standby
 # (Note: this will be ignored on a primary, but we recommend including it anyway, in case the primary later becomes 
@@ -1006,11 +1006,16 @@ archive_mode = on
 
 archive_command = '/bin/true'
 
+NB : # --- Optional: Enable archive for backup (recommended) ---
+archive_mode = on
+archive_command = 'cp %p /var/lib/postgresql/15/main/archive/%f'
+
 Create the repmgr user and database
 ----------------------
-createuser -s repmgr
-createdb repmgr -0 repmgr
-ALTER USER repmgr SET search_path TO repmgr, "$user", public;
+
+	createuser -s repmgr
+	createdb repmgr -0 repmgr
+	ALTER USER repmgr SET search_path TO repmgr, "$user", public;
 
 Configuring authentication in pg_hba.conf
 --------------------------------------------
@@ -1119,7 +1124,8 @@ automatically.
 
 Note
 ------
-By default, any config files in the primary''s data directory will be copied to the standby. Typically, these will be
+By default, any config files in the primary''s data directory will be copied to the standby. Typically, these 
+will be:
 
 	postgresql.conf,
 	postgresql.auto.conf,
