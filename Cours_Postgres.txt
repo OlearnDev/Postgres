@@ -409,7 +409,7 @@ Demo
 -----
 $ psql -U postgres -p 5432  <- prompts for password
 
-vi.pgpass
+vi .pgpass
 
 	# format is as below
 
@@ -641,8 +641,26 @@ postgres=# select  relname,reltablespace from pg_class where relname like 'tab%'
 
 pg_basebackup --format=p --tablespace-mapping=/tmp/space2=/tmp/space2backup -D plainb
 
-*********** Why is tablespace is used for
+Syntaxe de base
 
+	pg_basebackup -h <host> -p <port> -U <user> -D <destination> [-F <format>] [-R] [-X <method>] [-z] [-P]
+
+Paramètres essentiels
+---------------------
+-h,--host 					Hôte du serveur PostgreSQL (ex:localhost,192.168.1.10)
+-p,--port					Port (par défaut :5432)
+-U,--username				Utilisateur avec droit de réplication (ex:replication ou postgres)
+-D,--pgdata					Répertoire de destination où sauvegarder les fichiers
+-F,--format					Format de sortie :p (plain, dossier) ou t(tar, archive unique)
+-R,--write-recovery-conf	Génère automatiquement	standby.signal + postgresql.auto.conf pour la réplication
+-X,--wal-method				Méthode de capture des fichiers WAL :fetch (par défaut) ou stream(recommandé)
+-z,--gzip					Compresse la sortie en .tar.gz (si format tar)
+-P,--progress				Affiche une barre de progression
+
+ex: pg_basebackup -h 192.168.1.10 -p 5432 -U replication -D /backup/postgres/basebackup_20240615 -F p -X stream -P
+
+What is tablespace used for
+---------------------------
 - Database growing then create a new tablespace and move objects from existing to new tablespace. 
 - High perfomrming disk move indexes and table to that
 
