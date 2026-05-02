@@ -724,8 +724,8 @@ Chap.6.Introduction to PostgreSQL log_statement
 
 - It''s related to error and error reporting, along with warnings and database queries in a 
   logfile.
-- The default log_statement option in the PostgreSQL configuration file is none, which means nothing will be logged 
-  into the error file.
+- The default log_statement option in the PostgreSQL configuration file is none, which means 
+  nothing will be logged into the error file.
 
 	Options:
 		NONE
@@ -735,13 +735,14 @@ Chap.6.Introduction to PostgreSQL log_statement
 
 How does log_statement work in PostgreSQL?
 
-- It''s a useful parameter in PostgreSQL used to log errors in the logfile, database warning messages, and SQL queries.
+- It''s a useful parameter in PostgreSQL used to log errors in the logfile, database warning 
+  messages, and SQL queries.
 - Log_statements have four options available in PostgreSQL, as mentioned below.
 
 None:
 	- This option of log_statement is defined as not logging any query in the error log file.
-	- This is the default configuration option of log_statement available. This is also defined as turning off the 
-	  log_statement parameter for PostgreSQL.
+	- This is the default configuration option of log_statement available. This is also 
+	  defined as turning off the log_statement parameter for PostgreSQL.
 DDL: 
 	- Log all queries that are under the category of the DDL statement.
 		E.g., create, alter, and drop statements.
