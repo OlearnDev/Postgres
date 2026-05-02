@@ -746,14 +746,14 @@ None:
 DDL: 
 	- Log all queries that are under the category of the DDL statement.
 		E.g., create, alter, and drop statements.
-A11:
+All:
 	- This option is defined as logging all statements executed by the user
 	- It is logging DDL, DML, and all the query language in PostgreSQL.
 	- Not advised
 
 Mod:
-	- This option in log_statement is defined as log DDL query as well as log the modifying statement like delete, 
-	  update, truncate, insert, copy, execute, and prepare
+	- This option in log_statement is defined as log DDL query as well as log the modifying 
+	  statement like delete, update, truncate, insert, copy, execute, and prepare
 
 Example #1  Log statement with none options.**************************
 
@@ -773,10 +773,10 @@ select from course;
 
 tail -10f postgresql-***.log
 
-Example #2  Log statement using DOL options. **************************
+Example #2  Log statement using DDL options. **************************
 
-In the following example, we have used DDL options with the log statement parameter. It will log only the DDL 
-statement into the error log.
+In the following example, we have used DDL options with the log statement parameter. It will 
+log only the DDL statement into the error log.
 
 Psql script:
 
