@@ -811,8 +811,8 @@ delete from course;
 
 Example #3 Log statement using ALL options. 
 ------------------------------------------
-In the example below, we have used ALL options with the log statement parameter. It will log all statements 
-into the error log.
+In the example below, we have used ALL options with the log statement parameter. It will log 
+all statements into the error log.
 
 Psql script:
 
@@ -825,8 +825,8 @@ select * from course;
 
 Example #4  Log statement using mod options.  
 ------------------------------------------
-In the following example, we have used mod options with the log statement parameter. It will log DDL and DML 
-into the error log.
+In the following example, we have used mod options with the log statement parameter. It will 
+log DDL and DML into the error log.
 
 Psql script:
 
