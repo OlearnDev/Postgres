@@ -1395,13 +1395,15 @@ Example-1
 
 # TYPE	DATABASE	USER	ADDRESS			METHOD
 
-host	all			all		127.0.0.1/32	trust   <- Any conn from localhost will go through trust auth method and will be accepted
+host	all			all		127.0.0.1/32	trust   <- Any conn from localhost will go 
+												through trust auth method and will be accepted
 
 Example-2
 
 # TYPE	DATABASE	USER	ADDRESS			METHOD
 
-host	all			all		127.0.0.1/32	reject <- Any host that is not localhost will have the connection rejected.
+host	all			all		127.0.0.1/32	reject <- Any host that is not localhost will 
+													  have the connection rejected.
 
 Testing
 	Trust Authentication
@@ -1430,15 +1432,15 @@ testing
 
 SCRAM Authentication
 --------------------
-It is one of the most secure authentication methods, using cryptographically hashed security mechanisms to store 
-passwords on the system.
+It is one of the most secure authentication methods, using cryptographically hashed security
+ mechanisms to store passwords on the system.
 
 testing
 	SET password encryption = 'scram-sha-256';
 	
 	ALTER USER postgres WITH PASSWORD 'password';
 
-Modify hab.conf as below
+Modify pg_hba.conf as below
 
 host 	database 	user 	address		auth-method
 host	all			all		IP/32		<span class="s1">scram-sha-256</span>
@@ -1518,7 +1520,7 @@ dvdrental 99+# select name, setting, unit from pg_settings where name like 'arch
 		archive_timeout			 300	<-- 5 mn																									 s
 		
 		
-Post verification let''s forcefully switch the wasl logfiles;
+Post verification let''s forcefully switch the wal logfiles;
 
 	psql
 
@@ -1535,11 +1537,11 @@ Post verification let''s forcefully switch the wasl logfiles;
 
 	alter user postgres password 'password';
 
-Initiate a compressed pg basebackup to a destination directory
+Initiate a compressed pg_basebackup to a destination directory
 
 	mkdir -p /var/lib/pgsql/pg_backup
 
-	pg_basebackup -h localhost -p 5432 -U postgres -D /var/lib/pgsql/pg_backup -Ft -z -Xs -P  <-- local backup
+	pg_basebackup -h localhost -p 5432 -U postgres -D /var/lib/pgsql/pg_backup -Ft -z -Xs -P  <- local backup
 
 
 	-D,	--pgdata=DIRECTORY				receive base backup into directory
@@ -1582,7 +1584,7 @@ Initiate an uncompressed pg_basebackup to a destination directory
 
 	mkdir -p /var/lib/pgsql/pg_backup_uncompressed  (remove the -z option)
 
-	pg_basebackup -h localhost -p 5432 -U postgres -D/var/lib/pgsql/pg_backup_uncompressed -Ft -Xs -P
+	pg_basebackup -h localhost -p 5432 -U postgres -D /var/lib/pgsql/pg_backup_uncompressed -Ft -Xs -P
 
 Verify that the uncompressed backup has been taken
 ------------------
@@ -1665,7 +1667,8 @@ Using CREATE DATABASE
 --------------------
 This command will create a database on PostgreSQL (psql).
 
-If you have appropriate privileges to create a database, by default, the new database will be created by copying the system database template 1.
+If you have appropriate privileges to create a database, by default, the new database will 
+be created by copying the system database template 1.
 
 Syntax:
 
@@ -1675,9 +1678,7 @@ The basic syntax of the CREATE DATABASE statement is as follows:
 
 	where dbname is the name of the database to create.
 
-Example:
-
-It creates testdb in your PostgreSQL schema.
+Example: To create testdb in your PostgreSQL schema.
 
 	postgres# CREATE DATABASE testdb;
 
@@ -1688,8 +1689,9 @@ Using createdb Command
 
 The executable createdb is a utility for CREATE DATABASE.
 
-The only difference between createdb and PSO CREATE DATABASE is that the former can be run directly from the 
-command line and it allows a comment to be added to the database, all in one command.
+The only difference between createdb and PSO CREATE DATABASE is that the former can be run 
+directly from the command line and it allows a comment to be added to the database, all in 
+one command.
 
 Syntax:
 
