@@ -941,22 +941,22 @@ Installation of REPMGR
 
 Requirements for installing repmgr
 -----------
-	All cluster servers have the same major version of PostgreSQL, same minor version.
-
-	repmgr must be installed on each server in the replication cluster.
-	If installing repmgr from packages, the package version must match the PostgreSQL version.
-	If installing from source, repmgr must be compiled against the same major version.
+	.All cluster servers have the same major version of PostgreSQL, same minor version.
+	.repmgr must be installed on each server in the replication cluster.
+	.If installing repmgr from packages, the package version must match the PostgreSQL version.
+	.If installing from source, repmgr must be compiled against the same major version.
 
 Installing repmgr from packages
 -----------
-repmgr RPM packages for RedHat/CentOS variants and Fedora are available from the 2ndQuadrant public repository;
+repmgr RPM packages for RedHat/CentOS variants and Fedora are available from the 2nd Quadrant
+ public repository;
 
-sudo yum install repmgri1
+	sudo yum install repmgri1
 
 Prerequisites for setting up a basic replication cluster with repmgr
 -----------
 We''ll assume the
-	primary is called node  with IP address 192.168.1.51
+	primary is called node1  with IP address 192.168.1.51
 	standby is called node2 with IP address 192.168.1.61
 
 	Following software must be installed on both servers:
@@ -965,10 +965,11 @@ We''ll assume the
 
 At the network level
 -----------
-	- Connections between the PostgreSQL port (default: 5432) must be possible in both directions.
-	- If you want repmgr to copy configuration files which are located outside the PostgreSQL data directory,
-	    and/or to test switchover functionality,you need passwordless SSH connections between both servers, 
-	    and rsync should be installed
+	- Connections between the PostgreSQL port (default: 5432) must be possible in both 
+	   directions.
+	- If you want repmgr to copy configuration files which are located outside the PostgreSQL
+  	   data directory, and/or to test switchover functionality, you need passwordless SSH 
+	   connections between both servers, and rsync should be installed
 
 PostgreSQL Configuration
 -----------
@@ -1016,8 +1017,9 @@ ALTER USER repmgr SET search_path TO repmgr, "$user", public;
 
 Configuring authentication in pg_hba.conf
 --------------------------------------------
-Ensure the repmgr user has appropriate permissions in pg_hba.conf and can connect in replication mode;
-pg_hba.conf should contain entries similar to the following:  [6 lines important for replication]
+Ensure the repmgr user has appropriate permissions in pg_hba.conf and can connect in 
+  replication mode;
+pg_hba.conf should contain entries similar to the following: [6 lines important for replication]
 
 	local	replication	repmgr					trust
 	host	replication	repmgr	127.0.0.1/32	trust
@@ -1029,8 +1031,9 @@ pg_hba.conf should contain entries similar to the following:  [6 lines important
 
 Preparing the standby
 ----------------
-	- Do not create a PostgreSQL instance (i.e., do not execute initdb), but do ensure the destination data directory 
-	  (and any other directories you want PostgreSQL to use) exist and are owned by the Postgres system user.
+	- Do not create a PostgreSQL instance (i.e., do not execute initdb), but do ensure the 
+	  destination data directory (and any other directories you want PostgreSQL to use) 
+	  exist and are owned by the Postgres system user.
 	- Permissions must be set to 0700 (drwx------).
 	- Check the primary database is reachable from the standby using psql:
 
@@ -1038,20 +1041,22 @@ Preparing the standby
 
 repmgr configuration file Primary
 ----------------
-  Create a repmgr.conf file on the primary server. The file must contain at least the following parameters:
+  Create a repmgr.conf file on the primary server. The file must contain at least the 
+  following parameters:
 
 	node_id=1
 	node_name='node1'
 	conninfo='host=node1 user=repmgr dbname=repmgr connect_timeout=2'
 	data_directory='/var/lib/postgresql/data'
 
-  repmgr.conf should not be stored inside the PostgreSQL data directory, as it could be overwritten when setting up
-  or reinitializing the PostgreSQL server.
+  repmgr.conf should not be stored inside the PostgreSQL data directory, as it could be 
+  overwritten when setting up or reinitializing the PostgreSQL server (ex: /etc/repmgr.conf).
 
 Register the primary server
 ----------------
-To enable repmgr to support a replication cluster, the primary node must be registered with repmgr. This installs the 
-repmgr extension and metadata objects, and adds a metadata record for the primary server:
+To enable repmgr to support a replication cluster, the primary node must be registered with 
+repmgr. This installs the repmgr extension and metadata objects, and adds a metadata record 
+for the primary server:
 
 	$ repmgr -f /etc/repmgr.conf primary register   --repmgr.conf has the 4 params above
 
@@ -1086,14 +1091,14 @@ The record in the repmgr metadata table will look like this:
 	config_file			/etc/repmgr.conf
 
 Each server in the replication cluster will have its own record.
-If repmgrd is in use, the fields upstream_node_id, active, and type will be updated when the node''s status or role 
-  changes.
+If repmgrd is in use, the fields upstream_node_id, active, and type will be updated when the
+ node''s status or role changes.
 
 Clone the standby server
 -----------------
-Create a repmgr.conf file on the standby server. It must contain at least the same parameters as the primary''s 
-repmgr.conf, but with the mandatory values node, node_name, conninfo (and possibly data_directory) adjusted 
-accordingly, e.g.:
+Create a repmgr.conf file on the standby server. It must contain at least the same parameters 
+as the primary''s repmgr.conf, but with the mandatory values node, node_name, conninfo 
+(and possibly data_directory) adjusted accordingly, e.g.:
 
 	node_id=2
 	node_name='node2'
@@ -1115,9 +1120,10 @@ Use the -dry-run option to check the standby can be cloned:
 
 	$ repmgr -h node1 -U repmgr -d repmgr -f /etc/repmgr.conf standby clone  //run effectiveliy
 
-This has cloned the PostgreSQL data directory files from the primary node 1 using PostgreSQL''s pg_basebackup utility.
-A recovery.conf file containing the correct parameters to start streaming from this primary server will be created 
-automatically.
+This has cloned the PostgreSQL data directory files from the primary node 1 using PostgreSQL''s 
+  pg_basebackup utility.
+A recovery.conf file containing the correct parameters to start streaming from this primary 
+  server will be created automatically.
 
 Note
 ------
@@ -1129,7 +1135,8 @@ By default, any config files in the primary''s data directory will be copied to 
 	pg_ident.conf.
 
 These may require modification before the standby is started.
-Make any adjustments to the standby''s PostgreSQL configuration files now, then start the server	
+Make any adjustments to the standby''s PostgreSQL configuration files now, then start the 
+server	
 	
 Verify replication is functioning
 ------------------------------------
@@ -1137,15 +1144,16 @@ Connect to the primary server and execute:
 
 	repmgr=# SELECT * FROM pg_stat_replication;
 
-This shows that the previously cloned standby (node2 shown in the application_name field) has connected to the primary
-from its IP address...
+This shows that the previously cloned standby (node2 shown in the application_name field) 
+has connected to the primary from its IP address...
 
-From PostgreSQL 9.6, you can also use the pg_stat_wal_receiver view to check the replication status from the standby.
+From PostgreSQL 9.6, you can also use the pg_stat_wal_receiver view to check the replication
+ status from the standby.
 
 	repmgr=# SELECT * FROM pg_stat_wal_receiver;
 
-Note that the conninfo value is generated in recovery.conf and will differ slightly from the primary''s conninfo as 
-set in repmgr.
+Note that the conninfo value is generated in recovery.conf and will differ slightly from the
+ primary''s conninfo as set in repmgr.
 
 Register the standby
 --------------
@@ -1186,23 +1194,25 @@ or
 
 3. How to connect psql remotely from the command line.
 
-Note: psql is built as a "console application." Since the Windows console, windows use a different encoding than the rest of the system.
+Note: psql is built as a "console application." Since the Windows console, windows use a 
+different encoding than the rest of the system.
 
 chcp 1252
 
 cd C:\Program Files\PostgreSQL\12\bin
-psql -U postgres p 5432 h 192.168.1.61 -W	<- To connect remotely 
+psql -U postgres p 5432 -h 192.168.1.61 -W	<- To connect remotely 
   password
 
 4. \d
 
-5.	\1: List databases
+5.	\l: List databases
 	\c dbname "Connect to a database"
-	psql -h 192.168.1.61 p 5432 U postgres dvdrental
+	psql -h 192.168.1.61 p 5432 -U postgres dvdrental
 
 6. Tables related commands
-	\dt						: list of tables of connected db
-	\c dvdrental
+
+	\dt				: list of tables of connected db
+	\c dvdrental	: Change to db dvdrental
 	\dt
 	\d tablename  : Show table definition (columns, etc.) including triggers
 	\d+ tablename : More detailed table definition including description and physical disk size.
@@ -1220,17 +1230,19 @@ postgres # SELECT tablename, indexname, indexdef from pg_indexes WHERE tablename
 	DROP SCHEMA myschema;
 	DROP SCHEMA myschema CASCADE;
 	
-9.	\dy: List events
-	\df: List functions
-	\df+ <function_name> Show function SQL code.
-	\dT+: List all data types
-	\dv: List views
-	\dx: List all extensions installed
-	\x: Pretty-format query results instead of the not-so-useful ASCII tables
+9.	\dy		: List events
+	\df		: List functions
+	\df+ <function_name> : Show function SQL code.
+	\dT+	: List all data types
+	\dv		: List views
+	\dx		: List all extensions installed
+	\x		: Pretty-format query results instead of the not-so-useful ASCII tables
+
 	\copy (SELECT FROM_table_name) TO 'file_path_and_name.csv' WITH CSV: Export a table as CSV
 	\copy (SELECT * FROM actor) TO 'c:\actor.csv' WITH CSV: Export a table as CSV
-	\des+: List all foreign servers
-	\dE[S+]: List all foreign tables
+
+	\des+	: List all foreign servers
+	\dE[S+]	: List all foreign tables
 
 10.	\du: List users
 	\du appreporting_user1: List a username if present.
@@ -1252,8 +1264,7 @@ Uninstall Old Versions of Docker:
 
 Docker installation on Ubuntu: 
 	sudo apt-get update
-
-How to install Docker on Ubuntu: sudo apt install docker.io
+	sudo apt install docker.io
 
 Start and automate Docker on host reboot
 
@@ -1264,10 +1275,13 @@ Start and automate Docker on host reboot
 How to check docker version
 	docker --version
 
-Step to pull Postgres image and the container. Let''s pull postgres image onto Ubuntu system from docker hub.
+Step to pull Postgres image and the container. Let''s pull postgres image onto Ubuntu 
+system from docker hub.
+
 	sudo docker pull postgres
 
 How to verify all existing Docker images.
+	
 	sudo docker images
 
 Once verified, start the Postgres instance.
@@ -1331,8 +1345,8 @@ cat pg_hba.conf|grep i method
 	# METHOD can be "trust", "reject", "md5", "password", "scram-sha-256",
 	# Authentication methods refer to the "Client Authentication"
 
-	Note: This is an inter-process communication mechanism that allows bidirectional data exchange between processes 
-	running on the ...
+	Note: This is an inter-process communication mechanism that allows bidirectional data 
+	exchange between processes running on the ...
 
 	Column of all pg_hba.conf
 	--------------------
@@ -1347,10 +1361,13 @@ cat pg_hba.conf|grep i method
 	# IPv6 local connections:
 	host		all				all			::1/128		 ident
 
-Column 1:Local is used by Unix-Domain socket. If it is a host, mention the host IP address in the address column.
+Column 1:Local is used by Unix-Domain socket. 
+		 If it is a host, mention the host IP address in the address column.
 Column 2: Used for the database; mention the database name.
-   If it has been set to all, then all the databases in the PostgreSQL cluster will use the same auth mechanism.
-Column 3: It is the user. It can be set to separate auth methods for different users, and "all" means for all users.
+		If it has been set to all, then all the databases in the PostgreSQL cluster will 
+		use the same auth mechanism.
+Column 3: It is the user. It can be set to separate auth methods for different users, 
+	    and "all" means for all users.
 Column 4: IP address. For example, the IP address can use a particular authentication method.
 Column 5: Which auth mode of authentication has to be used
 
@@ -1365,8 +1382,9 @@ hostnossl	DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS]
 hostgssenc	DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS]
 hostnogssenc DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS] 
 
-Method can be "trust", "reject", "md5", "password", "scram-sha-256", authentication methods -- refer to the 
-"Client Authentication"
+Method can be "trust", "reject", "md5", "password", "scram-sha-256", authentication methods 
+	-> refers to the "Client Authentication"
+	
 ********************************
 
 Auth method Trust
