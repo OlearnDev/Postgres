@@ -7,12 +7,10 @@ Connexion to aws instance ------------------------------------------------------
  
 You can connect using the web browser or using a shell:
 
-	$chmod 400 key_name.pem 
-	$ssh -i key_name.pem ubuntu@public ip 
-	$cat /etc/os-release
-	
-	You can check machine infos with: free -m, lscpu , df -h , ip a, hostname -i 
-
+							$chmod 400 key_name.pem 
+							$ssh -i key_name.pem ubuntu@public ip 
+							$cat /etc/os-release
+							You can check machine infos with: free -m, lscpu , df -h , ip a, hostname -i 
 NB: Default user is : 
 
 	Operating System			Default Username
@@ -112,7 +110,7 @@ Writer				Periodically writes the dirty buffer to a file.
 WAL Writer			Write the WAL buffer to the WAL file.
 Autovacuum Launcher	Fork autovacuum worker when autovacuum is enabled.lt. It is the responsibility of the autovacuum 
 					daemon to carry out vacuum operations on bloated tables on demand.
-Archiver			When in Archive log mode, copy the WAL file to the specified directory.
+Archiver			When in Archive.log mode, copy the WAL file to the specified directory.
 Stats Collector		DBMS usage statistics such as session execution information (pg_stat_activity) and table usage 
 					statistical information (pg_stat_all_tables) are collected
 					
@@ -146,23 +144,21 @@ Temp_buffers		 - Space used for temporary tables. The default setting is 8 MB
 Chap.3.Installation of postgresql 
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-On Windows :
+Installation Directory: C:\Program Files\PostgreSQL\17
+Server Installation Directory: C:\Program Files\PostgreSQL\17
+Data Directory: C:\Program Files\PostgreSQL\17\data
+Database Port: 5432
+Database Superuser: postgres
+Operating System Account: NT AUTHORITY\NetworkService
+Database Service: postgresql-x64-17
+Command Line Tools Installation Directory: C:\Program Files\PostgreSQL\17
+pgAdmin4 Installation Directory: C:\Program Files\PostgreSQL\17\pgAdmin 4
+Stack Builder Installation Directory: C:\Program Files\PostgreSQL\17
+Installation Log: C:\Users\oline\AppData\Local\Temp\install-postgresql.log
 
-	Installation Directory: C:\Program Files\PostgreSQL\17
-	Server Installation Directory: C:\Program Files\PostgreSQL\17
-	Data Directory: C:\Program Files\PostgreSQL\17\data
-	Database Port: 5432
-	Database Superuser: postgres
-	Operating System Account: NT AUTHORITY\NetworkService
-	Database Service: postgresql-x64-17
-	Command Line Tools Installation Directory: C:\Program Files\PostgreSQL\17
-	pgAdmin4 Installation Directory: C:\Program Files\PostgreSQL\17\pgAdmin 4
-	Stack Builder Installation Directory: C:\Program Files\PostgreSQL\17
-	Installation Log: C:\Users\oline\AppData\Local\Temp\install-postgresql.log
+user postgres/postgres
 
-	user postgres/postgres
 
-On Linux :
 
 ------------- Step 1 : Installing PostgreSQL on Linux 7.5
 
@@ -181,8 +177,8 @@ Summary below :
 
 ------------- Step 2 :  USING POSTGRESQL ROLE
 
-The installation procedure created a user account called postgres that is associated with 
-the default Postgres role and a sudo user.
+The installation procedure created a user account called postgres that is associated with the default Postgres role
+and a sudo user.
 
 SWITCH to POSTGRES ACCOUNT
 #sudo -u postgres
@@ -198,8 +194,8 @@ postgres# \q	: to exit psql
 
 You have the postgres role configured within the database.
 You can create new roles from the command line with the createrole command. 
-The "--interactive" flag will prompt you for the name of the new role and also ask whether 
-it should have superuser permissions.
+The "--interactive" flag will prompt you for the name of the new role and also ask whether it should have superuser 
+permissions.
 
 If you are logged in as the postgres account. 
 
@@ -224,45 +220,44 @@ PostgreSQL: Logical Structure of Postgres Database Cluster
 
 What is PostgreSQL Cluster:
 --------------------------
-A PostgreSQL Cluster does not mean "a collection of database nodes".A database cluster is a 
-collection of databases hosted on a PostgreSQL server:
-
+A PostgreSQL Cluster does not mean "a collection of database nodes".A database cluster is a collection of databases
+hosted on a PostgreSQL server:
 	A database is a collection of database objects.
 	A database object is a data structure that can store data or refer to data stored remotely.
 	A database is also called database objects.
 
 What is OID Object Identifiers (OIDS):
 
-	- All the database objects in PostgreSQL are internally managed by object identifiers 
-	  (OIDS), which are unsigned 4-byte integers. 
-	- The relationships between database objects and their respective OIDs are stored in 
-	  appropriate system catalogs, depending on the type of objects.
+	- All the database objects in PostgreSQL are internally managed by object identifiers (OIDS), which are unsigned 
+	  4-byte integers. 
+	- The relationships between database objects and their respective OIDs are stored in appropriate system catalogs, 
+	 depending on the type of objects.
 
-For example, OIDs of databases are stored in pg_database, so you can find out the OIDs you 
-want to know by issuing queries such as the following:
+For example, OIDs of databases are stored in pg_database, so you can find out the OIDs you want to know by issuing 
+queries such as the following:
 
 	SELECT datname, oid FROM pg_database WHERE datname 'testdb';
 	SELECT relname, oid FROM pg_class WHERE relname 'testdb';	
 
 Physical Structure of Database Cluster
 --------------------------------------
-A database cluster has one directory called the base directory.
-
-And it contains further subdirectories and many files.
-When you execute initdb to initialize a new database cluster,
-A base directory is created in the directory mentioned above.
-Generally, the path of the base directory is usually set to the environment variable PGDATA.
+	- A database cluster has one directory called the base directory and it contains further subdirectories and 
+	  many files.	
+	- When you execute initdb to initialize a new database cluster, a base directory is created in the directory 
+	  mentioned above.
+	- Generally, the path of the base directory is usually set to the environment variable PGDATA.
 
 Layout of files and subdirectories under the base directory.
 ---------------------------------------------------------
-Files				Description
---------			------------
-PG_VERSION			A file containing the major version number of PostgreSQL.
-pg_hba.conf	 		A file to control PostgreSQL''s client authentication(host base auth file)
-pg_ident.conf		A file to control PostgreSQL''s user name mapping.
-postgresql.conf		A file to set configuration parameters.
-postgresql.auto.conf A file used for storing configuration parameters that are set in ALTER SYSTEM (version 9.4 or later).
-postmaster.opts		A file recording the command line options the server was last started with
+Files					Description
+--------				------------
+	PG_VERSION				A file containing the major version number of PostgreSQL.
+	pg_hba.conf	A 			file to control PostgreSQL''s client authentication. (host base auth file)
+	pg_ident.conf			A file to control PostgreSQL''s user name mapping.
+	postgresql.conf			A file to set configuration parameters.
+	postgresql.auto.conf 	A file used for storing configuration parameters that are set in ALTER SYSTEM 
+							(version 9.4 or later).
+	postmaster.opts			A file recording the command line options the server was last started with
 
 subdirectories				description
 -------------				----------------
@@ -290,7 +285,8 @@ pg_wal/			(Version 10 or later) Subdirectory containing WAL (Write Ahead Logging
 pg_xact/		(Version 10 or later) Subdirectory containing transaction commit state data
 				It is renamed from pg_clog in Version 10.
 pg_xlog/		(Version 9.6 or earlier). Subdirectory containing WAL (Write Ahead Logging) segment files	
-
+				It is renamed to pg_wal in Version 10.
+				
 -bash-4.2$cd $PGDATA/global
 -bash-4.2$ ls
 1213  1214_fsm  1213_fsm 1214_vm  1213_vm  1232  1214  1233  1260  1260_vm  1261  2676  1261_fsm  1260_fsm  1262
@@ -298,13 +294,13 @@ pg_xlog/		(Version 9.6 or earlier). Subdirectory containing WAL (Write Ahead Log
 ...
 6100 1261_vm 6114  6115  pg_control  pg_filenode.map  pg_internal.init
 
-It is renamed to pg_wal in Version 10.
+
 
 * Files layout structure in database *
 ---------------------------------------
 
-A database is available as a subdirectory under the base subdirectory; and the database 
-directory names are equal to the respective OIDs.
+A database is available as a subdirectory under the base subdirectory; and the database directory names are equal 
+to the respective OIDs.
 
 For example :
 	psql #
@@ -317,9 +313,8 @@ Its subdirectory name is 16390.
 How is the layout of files associated with tables and indexes stored in postgres
 ------------------------------------------------------------------------------
 
-Tables and indexes are known as database objects and are internally managed by PostgreSQL as 
-individual OIDs on file systems, but the data files are managed by the variable called 
-relfilenode.
+Tables and indexes are known as database objects and are internally managed by PostgreSQL as individual OIDs on 
+file systems, but the data files are managed by the variable called relfilenode.
 
 The relfilenode values of tables and indexes are basically the same but may match the OIDS.
 
@@ -348,6 +343,7 @@ postgres=# SELECT relname, oid, relfilenode FROM pg_class WHERE relname 'course'
 	(1 row)
 
 Relevant PATH:
+
 	cd $PGDATA
 	cd /var/lib/pgsql/13/data/base/16391
 
@@ -358,20 +354,20 @@ Relevant PATH:
 		base/16390/16397
 		(1 row)
 
-	- When the file size of tables and indexes exceeds 1 GB, PostgreSQL creates a new file 
-	  named like relfilenode.1  and uses it
-	- The maximum file size of tables and indexes can be changed using the configuration 
-	  option --with-segsize when building PostgreSQL.
+	- When the file size of tables and indexes exceeds 1 GB, PostgreSQL creates a new file named like 
+	  relfilenode.1 and uses it
+	- The maximum file size of tables and indexes can be changed using the configuration option --with-segsize 
+	  when building PostgreSQL.
 	- Each table has two associated files suffixed with '_fsm' and '_vm' respectively
-	- IT is referred to as free space map and visibility map and staires the info of the free space capacity and the 
-	  visibility on each page
+	- IT is referred to as "free space map" and "visibility map" and staires the info of the free space capacity 
+	  and the visibility on each page
 
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 Chap.34: WHAT IS PASSWORD FILE
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
 
-The .pgpass file, also known as the password file, in a user''s home directory can contain 
-passwords to be used if the connection requires a password.
+The .pgpass file, also known as the password file, in a user''s home directory can contain passwords to be used if 
+the connection requires a password.
 
 	$ psql -U postgres
 
@@ -413,7 +409,7 @@ Demo
 -----
 $ psql -U postgres -p 5432  <- prompts for password
 
-vi.pgpass
+vi .pgpass
 
 	# format is as below
 
@@ -435,7 +431,7 @@ pg_global : tablespace stores all global data (dictionnaire)
 ---------- DEFAULT STORAGE IN POSTGTRESQL
 
 pg_ctl -D data initdb
-Is -IF data
+ls -IF data
 pg_ctl -D data start
 
 When you initialize postgre, the Postgres server creates the required files in $PGDATA directory 
@@ -451,12 +447,12 @@ pg_default : tablespace is the default tablespace for users and also for templat
 
 postgres# create tablespace tbs1 location '/postgres/data/tbs1';
 postgres# \db+
-Is -l data/pg_tblspc/
+ls -l data/pg_tblspc/
 
 Creating Objects :
 
 create database dbl tablespace tbs1;
-\c db1					-- Switch to db : db1
+\c dbl					-- Switch to db : db1
 
 create table tab1 (a int);
 create table tab2 (a int) tablespace tbs2;
@@ -510,14 +506,12 @@ total 4.0K
 drwx------ 2 postgres postgres 4.0K Nov  8 22:33 PG_16_202307071
 postgres@OlivierLP:~/16/data$
 
-***** pg_tblspc : folder in $PGDATA where you have symbolic links to tablespaces folders 
-associated with tablespaces 
+***** pg_tblspc : folder in $PGDATA where you have symbolic links to tablespaces folders associated with tablespaces 
 
 postgres@OlivierLP:~/16/main$ ls
 PG_VERSION  pg_commit_ts  pg_multixact  pg_serial     pg_stat_tmp  pg_twophase  postgresql.auto.conf
 base        pg_dynshmem   pg_notify     pg_snapshots  pg_subtrans  pg_wal       postmaster.opts
 global      pg_logical    pg_replslot   pg_stat       pg_tblspc    pg_xact      postmaster.pid
-
 postgres@OlivierLP:~/16/main$ cd pg_tblspc
 postgres@OlivierLP:~/16/main/pg_tblspc$
 postgres@OlivierLP:~/16/main/pg_tblspc$ ls -ltrh
@@ -543,9 +537,9 @@ postgres=# \l
 (4 rows)
 
 postgres@OlivierLP:~/16/main/pg_tblspc$ mkdir -p /var/lib/postgresql/16/data/tbs2
-
 postgres=# create tablespace tbs2 location '/var/lib/postgresql/16/data/tbs2';
 CREATE TABLESPACE
+
 
 postgres=#
 
@@ -588,7 +582,7 @@ postgres=#
 
 NB: There will be a lock on the table while moving to another tbs
 
-alter table tab1 set tablespace pg_default;
+alter table tabl set tablespace pg_default;
 alter table all in tablespace tbs1 set tablespace pg_default;
 
 *********** Tablespace Properties
@@ -631,7 +625,7 @@ postgres=# select * from pg_tablespace;
  16397 | tbs2       |       10 |        |
 (4 rows)
 
-postgres=# select relname,reltablespace from pg_class where relname like 'tab%';
+postgres=# select  relname,reltablespace from pg_class where relname like 'tab%';
 
       relname      | reltablespace
 -------------------+---------------
@@ -647,8 +641,26 @@ postgres=# select relname,reltablespace from pg_class where relname like 'tab%';
 
 pg_basebackup --format=p --tablespace-mapping=/tmp/space2=/tmp/space2backup -D plainb
 
-*********** What is tablespace used for
+Syntaxe de base
 
+	pg_basebackup -h <host> -p <port> -U <user> -D <destination> [-F <format>] [-R] [-X <method>] [-z] [-P]
+
+Paramètres essentiels
+---------------------
+-h,--host 					Hôte du serveur PostgreSQL (ex:localhost,192.168.1.10)
+-p,--port					Port (par défaut :5432)
+-U,--username				Utilisateur avec droit de réplication (ex:replication ou postgres)
+-D,--pgdata					Répertoire de destination où sauvegarder les fichiers
+-F,--format					Format de sortie :p (plain, dossier) ou t(tar, archive unique)
+-R,--write-recovery-conf	Génère automatiquement	standby.signal + postgresql.auto.conf pour la réplication
+-X,--wal-method				Méthode de capture des fichiers WAL :fetch (par défaut) ou stream(recommandé)
+-z,--gzip					Compresse la sortie en .tar.gz (si format tar)
+-P,--progress				Affiche une barre de progression
+
+ex: pg_basebackup -h 192.168.1.10 -p 5432 -U replication -D /backup/postgres/basebackup_20240615 -F p -X stream -P
+
+What is tablespace used for
+---------------------------
 - Database growing then create a new tablespace and move objects from existing to new tablespace. 
 - High perfomrming disk move indexes and table to that
 
@@ -722,10 +734,9 @@ data_directory
 Chap.6.Introduction to PostgreSQL log_statement 
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-- It''s related to error and error reporting, along with warnings and database queries in a 
-  logfile.
-- The default log_statement option in the PostgreSQL configuration file is none, which means 
-  nothing will be logged into the error file.
+- It''s related to error and error reporting, along with warnings and database queries in a logfile.
+- The default log_statement option in the PostgreSQL configuration file is none, which means nothing will be logged 
+  into the error file.
 
 	Options:
 		NONE
@@ -735,25 +746,24 @@ Chap.6.Introduction to PostgreSQL log_statement
 
 How does log_statement work in PostgreSQL?
 
-- It''s a useful parameter in PostgreSQL used to log errors in the logfile, database warning 
-  messages, and SQL queries.
+- It''s a useful parameter in PostgreSQL used to log errors in the logfile, database warning messages, and SQL queries.
 - Log_statements have four options available in PostgreSQL, as mentioned below.
 
 None:
 	- This option of log_statement is defined as not logging any query in the error log file.
-	- This is the default configuration option of log_statement available. This is also 
-	  defined as turning off the log_statement parameter for PostgreSQL.
+	- This is the default configuration option of log_statement available. This is also defined as turning off the 
+	  log_statement parameter for PostgreSQL.
 DDL: 
 	- Log all queries that are under the category of the DDL statement.
 		E.g., create, alter, and drop statements.
-All:
+A11:
 	- This option is defined as logging all statements executed by the user
 	- It is logging DDL, DML, and all the query language in PostgreSQL.
 	- Not advised
 
 Mod:
-	- This option in log_statement is defined as log DDL query as well as log the modifying 
-	  statement like delete, update, truncate, insert, copy, execute, and prepare
+	- This option in log_statement is defined as log DDL query as well as log the modifying statement like delete, 
+	  update, truncate, insert, copy, execute, and prepare
 
 Example #1  Log statement with none options.**************************
 
@@ -773,19 +783,19 @@ select from course;
 
 tail -10f postgresql-***.log
 
-Example #2  Log statement using DDL options. **************************
+Example #2  Log statement using DOL options. **************************
 
-In the following example, we have used DDL options with the log statement parameter. It will 
-log only the DDL statement into the error log.
+In the following example, we have used DDL options with the log statement parameter. It will log only the DDL 
+statement into the error log.
 
 Psql script:
 
-alter system, set log statement 'DDL';
+alter system set log_statement 'DDL';
 
 $sudo systemctl restart postgresql-12 
 
 $psql
-postgres# show log statement;
+postgres# show log_statement;
 
 	log_statement
 	--------
@@ -811,8 +821,8 @@ delete from course;
 
 Example #3 Log statement using ALL options. 
 ------------------------------------------
-In the example below, we have used ALL options with the log statement parameter. It will log 
-all statements into the error log.
+In the example below, we have used ALL options with the log statement parameter. It will log all statements 
+into the error log.
 
 Psql script:
 
@@ -825,8 +835,8 @@ select * from course;
 
 Example #4  Log statement using mod options.  
 ------------------------------------------
-In the following example, we have used mod options with the log statement parameter. It will 
-log DDL and DML into the error log.
+In the following example, we have used mod options with the log statement parameter. It will log DDL and DML 
+into the error log.
 
 Psql script:
 
@@ -850,41 +860,37 @@ Chap.8.Repmgr (Replication & Failover Management)
 
 **** Streaming Replication in PostgreSQL (2 EC2 PostgreSQL-13)******
 
-Postgres replication is the process of copying data from one database host (primary) to 
-another database host (standby).
+Postgres replication is the process of copying data from one database host (primary) to another database host 
+(standby).
 
 In version 9.0 (back in 2010), streaming replication was introduced.
 
-- Streaming replication in PostgreSQL works on log shipping.
-- Every transaction in PostgreSQL is written to a transaction log called WAL (write-ahead log) 
-  to achieve durability.
-- A slave uses these WAL segments to continuously replicate changes from its master.
+	- Streaming replication in PostgreSQL works on log shipping.
+	- Every transaction in PostgreSQL is written to a transaction log called WAL (write-ahead log) to achieve 
+	  durability.
+	- A slave uses these WAL segments to continuously replicate changes from its master.
 
-In streaming replication, 3 kinds of processes work cooperatively.
+In streaming replication, three kinds of processes work cooperatively.
 	- A WAL sender process on the primary server sends WAL data to the standby server;
-	- and then, a WAL receiver and a startup process on the standby server receives and 
-	  replays this data.
+	- and then, a WAL receiver and a startup process on the standby server receives and replays this data.
 	- A WAL sender and a WAL receiver communicate using a single TCP connection.
 
-PostgreSQL is a widely used relational database that supports both logical and physical 
-replication:
+PostgreSQL is a widely used relational database that supports both logical and physical replication:
 
-- Logical replication streams high-level changes from the primary database cluster to the 
-  replica databases.
-  Using logical replication, you can stream changes to just a single database or table in a 
-  database.
+- Logical replication streams high-level changes from the primary database cluster to the replica databases.
+  Using logical replication, you can stream changes to just a single database or table in a database.
 
-- In physical replication, changes to the WAL (Write-Ahead-Logging) log file are streamed and
-  replicated in the replica clusters. As a result, you can''t replicate specific areas of a 
-  primary database cluster; instead, all changes to the primary are replicated
+- In physical replication, changes to the WAL (Write-Ahead-Logging) log file are streamed and replicated in the 
+ replica clusters. As a result, you can''t replicate specific areas of a primary database cluster; instead, all 
+ changes to the primary are replicated
 
 Overview of REPMGR 
 ----------------------
 
 repmgr is an open-source tool for managing replication and failover of PostgreSQL servers.
-It supports and enhances PostgreSQL''s built-in streaming replication which provides a single 
-  read/write primary server and one or more read-only standbys containing near-real-time 
-  copies of the primary server''s database.
+It supports and enhances PostgreSQL''s built-in streaming replication which provides a single read/write 
+primary server and one or more read-only standbys containing near-real-time copies of the primary server''s 
+database.
 
 It provides two main tools:
 
@@ -901,15 +907,13 @@ It provides two main tools:
 
 		A daemon that actively monitors servers in a replication cluster and performs below:
 		 - Monitoring and recording replication performance
-		 - Performing failover by detecting failure of the primary and promoting the most 
-		    suitable standby server
+		 - Performing failover by detecting failure of the primary and promoting the most suitable standby server
 
 Repmgr User and Metadata
 
 Repmgr needs to store information about the servers in the cluster in a schema.
-This schema is automatically created by the Repmgr extension which is installed during the 
- first step in initializing a Repmgr-administered cluster (Repmgr primary register) and 
- contains the following objects:
+This schema is automatically created by the Repmgr extension which is installed during the first step in 
+initializing a Repmgr-administered cluster (Repmgr primary register) and contains the following objects:
 
 Tables :
 
@@ -919,44 +923,38 @@ Tables :
 
 Views :
 
-  Repmgr.show_nodes: Based on the Repmgr.nodes table, additionally showing name of the 
-    server''s upstream node.
-	
-  Repmgr.replication_status: When Repmgr''s monitoring is enabled, shows current monitoring 
-    status for each stan...
-	
-  The Repmgr metadata schema can be stored in an existing database or in its own dedicated 
-    database. Note that the Repmgr metadata schema cannot reside on a database server that 
-	is not part of the replication c... managed by Repmgr
+  Repmgr.show_nodes: Based on the Repmgr.nodes table, additionally showing name of the server''s upstream node.
+  Repmgr.replication_status: When Repmgr''s monitoring is enabled, shows current monitoring status for each stan...
+  The Repmgr metadata schema can be stored in an existing database or in its own dedicated database. Note that 
+     the Repmgr metadata schema cannot reside on a database server that is not part of the replication c... 
+	 managed by Repmgr
 
-A database user must be available to access this database and make necessary changes.
-This user does not need to be a superuser, however some operations such as the initial 
- installation of the repmgr extension will require a superuser connection (this can be 
- specified where required with the co...
+A database user must be available to access this database and make necessary changes
+This user does not need to be a superuser, however some operations such as the initial installation of the 
+  repmgr extension will require a superuser connection (this can be specified where required with the co...
 
 Installation of REPMGR
 -----------
-  repmgr can be installed from binary packages provided by your OS packaging system, or from 
-  source.
+  repmgr can be installed from binary packages provided by your OS packaging system, or from source.
 
 Requirements for installing repmgr
 -----------
-	.All cluster servers have the same major version of PostgreSQL, same minor version.
-	.repmgr must be installed on each server in the replication cluster.
-	.If installing repmgr from packages, the package version must match the PostgreSQL version.
-	.If installing from source, repmgr must be compiled against the same major version.
+	All cluster servers have the same major version of PostgreSQL, same minor version.
+
+	repmgr must be installed on each server in the replication cluster.
+	If installing repmgr from packages, the package version must match the PostgreSQL version.
+	If installing from source, repmgr must be compiled against the same major version.
 
 Installing repmgr from packages
 -----------
-repmgr RPM packages for RedHat/CentOS variants and Fedora are available from the 2nd Quadrant
- public repository;
+repmgr RPM packages for RedHat/CentOS variants and Fedora are available from the 2ndQuadrant public repository;
 
-	sudo yum install repmgri1
+sudo yum install repmgri1
 
 Prerequisites for setting up a basic replication cluster with repmgr
 -----------
 We''ll assume the
-	primary is called node1  with IP address 192.168.1.51
+	primary is called node  with IP address 192.168.1.51
 	standby is called node2 with IP address 192.168.1.61
 
 	Following software must be installed on both servers:
@@ -965,11 +963,10 @@ We''ll assume the
 
 At the network level
 -----------
-	- Connections between the PostgreSQL port (default: 5432) must be possible in both 
-	   directions.
-	- If you want repmgr to copy configuration files which are located outside the PostgreSQL
-  	   data directory, and/or to test switchover functionality, you need passwordless SSH 
-	   connections between both servers, and rsync should be installed
+	- Connections between the PostgreSQL port (default: 5432) must be possible in both directions.
+	- If you want repmgr to copy configuration files which are located outside the PostgreSQL data directory,
+	    and/or to test switchover functionality,you need passwordless SSH connections between both servers, 
+	    and rsync should be installed
 
 PostgreSQL Configuration
 -----------
@@ -993,7 +990,7 @@ max_replication_slots = 10  -- used in our case
 # PostgreSQL 9.6 and later: one of 'replica' or 'logical'
 # ('hot_standby' will still be accepted as an alias for 'replica')
 
-wal_level = 'hot_standby'
+wal_level = 'hot_standby'  -- 'replica' is most used
 
 # Enable read-only queries on a standby
 # (Note: this will be ignored on a primary, but we recommend including it anyway, in case the primary later becomes 
@@ -1009,18 +1006,24 @@ archive_mode = on
 
 archive_command = '/bin/true'
 
+NB : # --- Optional: Enable archive for backup (recommended) ---
+archive_mode = on
+archive_command = 'cp %p /var/lib/postgresql/15/main/archive/%f'
+
 Create the repmgr user and database
 ----------------------
-createuser -s repmgr
-createdb repmgr -0 repmgr
-ALTER USER repmgr SET search_path TO repmgr, "$user", public;
+
+	createuser -s repmgr
+	createdb repmgr -0 repmgr
+	ALTER USER repmgr SET search_path TO repmgr, "$user", public;
 
 Configuring authentication in pg_hba.conf
 --------------------------------------------
-Ensure the repmgr user has appropriate permissions in pg_hba.conf and can connect in 
-  replication mode;
-pg_hba.conf should contain entries similar to the following: [6 lines important for replication]
+Ensure the repmgr user has appropriate permissions in pg_hba.conf and can connect in replication mode;
+pg_hba.conf should contain entries similar to the following:  [6 lines important for replication]
 
+	#TYPE	DATABASE	USER	ADDRESS			METHOD
+	
 	local	replication	repmgr					trust
 	host	replication	repmgr	127.0.0.1/32	trust
 	host	replication	repmgr	192.168.1.0/24	trust
@@ -1031,9 +1034,8 @@ pg_hba.conf should contain entries similar to the following: [6 lines important 
 
 Preparing the standby
 ----------------
-	- Do not create a PostgreSQL instance (i.e., do not execute initdb), but do ensure the 
-	  destination data directory (and any other directories you want PostgreSQL to use) 
-	  exist and are owned by the Postgres system user.
+	- Do not create a PostgreSQL instance (i.e., do not execute initdb), but do ensure the destination data directory 
+	  (and any other directories you want PostgreSQL to use) exist and are owned by the Postgres system user.
 	- Permissions must be set to 0700 (drwx------).
 	- Check the primary database is reachable from the standby using psql:
 
@@ -1041,22 +1043,20 @@ Preparing the standby
 
 repmgr configuration file Primary
 ----------------
-  Create a repmgr.conf file on the primary server. The file must contain at least the 
-  following parameters:
+  Create a repmgr.conf file on the primary server. The file must contain at least the following parameters:
 
 	node_id=1
 	node_name='node1'
 	conninfo='host=node1 user=repmgr dbname=repmgr connect_timeout=2'
 	data_directory='/var/lib/postgresql/data'
 
-  repmgr.conf should not be stored inside the PostgreSQL data directory, as it could be 
-  overwritten when setting up or reinitializing the PostgreSQL server (ex: /etc/repmgr.conf).
+  repmgr.conf should not be stored inside the PostgreSQL data directory, as it could be overwritten when setting up
+  or reinitializing the PostgreSQL server.
 
 Register the primary server
 ----------------
-To enable repmgr to support a replication cluster, the primary node must be registered with 
-repmgr. This installs the repmgr extension and metadata objects, and adds a metadata record 
-for the primary server:
+To enable repmgr to support a replication cluster, the primary node must be registered with repmgr. This installs the 
+repmgr extension and metadata objects, and adds a metadata record for the primary server:
 
 	$ repmgr -f /etc/repmgr.conf primary register   --repmgr.conf has the 4 params above
 
@@ -1091,14 +1091,14 @@ The record in the repmgr metadata table will look like this:
 	config_file			/etc/repmgr.conf
 
 Each server in the replication cluster will have its own record.
-If repmgrd is in use, the fields upstream_node_id, active, and type will be updated when the
- node''s status or role changes.
+If repmgrd is in use, the fields upstream_node_id, active, and type will be updated when the node''s status or role 
+  changes.
 
 Clone the standby server
 -----------------
-Create a repmgr.conf file on the standby server. It must contain at least the same parameters 
-as the primary''s repmgr.conf, but with the mandatory values node, node_name, conninfo 
-(and possibly data_directory) adjusted accordingly, e.g.:
+Create a repmgr.conf file on the standby server. It must contain at least the same parameters as the primary''s 
+repmgr.conf, but with the mandatory values node, node_name, conninfo (and possibly data_directory) adjusted 
+accordingly, e.g.:
 
 	node_id=2
 	node_name='node2'
@@ -1120,14 +1120,14 @@ Use the -dry-run option to check the standby can be cloned:
 
 	$ repmgr -h node1 -U repmgr -d repmgr -f /etc/repmgr.conf standby clone  //run effectiveliy
 
-This has cloned the PostgreSQL data directory files from the primary node 1 using PostgreSQL''s 
-  pg_basebackup utility.
-A recovery.conf file containing the correct parameters to start streaming from this primary 
-  server will be created automatically.
+This has cloned the PostgreSQL data directory files from the primary node 1 using PostgreSQL''s pg_basebackup utility.
+A recovery.conf file containing the correct parameters to start streaming from this primary server will be created 
+automatically.
 
 Note
 ------
-By default, any config files in the primary''s data directory will be copied to the standby. Typically, these will be
+By default, any config files in the primary''s data directory will be copied to the standby. Typically, these 
+will be:
 
 	postgresql.conf,
 	postgresql.auto.conf,
@@ -1135,8 +1135,7 @@ By default, any config files in the primary''s data directory will be copied to 
 	pg_ident.conf.
 
 These may require modification before the standby is started.
-Make any adjustments to the standby''s PostgreSQL configuration files now, then start the 
-server	
+Make any adjustments to the standby''s PostgreSQL configuration files now, then start the server	
 	
 Verify replication is functioning
 ------------------------------------
@@ -1144,16 +1143,15 @@ Connect to the primary server and execute:
 
 	repmgr=# SELECT * FROM pg_stat_replication;
 
-This shows that the previously cloned standby (node2 shown in the application_name field) 
-has connected to the primary from its IP address...
+This shows that the previously cloned standby (node2 shown in the application_name field) has connected to the primary
+from its IP address...
 
-From PostgreSQL 9.6, you can also use the pg_stat_wal_receiver view to check the replication
- status from the standby.
+From PostgreSQL 9.6, you can also use the pg_stat_wal_receiver view to check the replication status from the standby.
 
 	repmgr=# SELECT * FROM pg_stat_wal_receiver;
 
-Note that the conninfo value is generated in recovery.conf and will differ slightly from the
- primary''s conninfo as set in repmgr.
+Note that the conninfo value is generated in recovery.conf and will differ slightly from the primary''s conninfo as 
+set in repmgr.
 
 Register the standby
 --------------
@@ -1194,25 +1192,23 @@ or
 
 3. How to connect psql remotely from the command line.
 
-Note: psql is built as a "console application." Since the Windows console, windows use a 
-different encoding than the rest of the system.
+Note: psql is built as a "console application." Since the Windows console, windows use a different encoding than the rest of the system.
 
 chcp 1252
 
 cd C:\Program Files\PostgreSQL\12\bin
-psql -U postgres p 5432 -h 192.168.1.61 -W	<- To connect remotely 
+psql -U postgres -p 5432 -h 192.168.1.61 -W	<- To connect remotely 
   password
 
 4. \d
 
-5.	\l: List databases
-	\c dbname "Connect to a database"
-	psql -h 192.168.1.61 p 5432 -U postgres dvdrental
+5.	\l							: List databases
+	\c dbname 					: "Connect to a database called dbname"
+	psql -h 192.168.1.61 p 5432 U postgres dvdrental
 
 6. Tables related commands
-
-	\dt				: list of tables of connected db
-	\c dvdrental	: Change to db dvdrental
+	\dt						: list of tables of connected db
+	\c dvdrental
 	\dt
 	\d tablename  : Show table definition (columns, etc.) including triggers
 	\d+ tablename : More detailed table definition including description and physical disk size.
@@ -1220,7 +1216,7 @@ psql -U postgres p 5432 -h 192.168.1.61 -W	<- To connect remotely
 
 postgres # select * from pg_catalog.pg_tables where schemaname != 'pg_catalog' and schemaname != 'information_schema';
 
-7.  \di 	 :List indexes
+7.  \di 	 : List indexes
 	\d actor : Lists indexes of a particular table 
 
 postgres # SELECT tablename, indexname, indexdef from pg_indexes WHERE tablename LIKE '%actor%' ORDER BY tablename, indexname;
@@ -1230,19 +1226,17 @@ postgres # SELECT tablename, indexname, indexdef from pg_indexes WHERE tablename
 	DROP SCHEMA myschema;
 	DROP SCHEMA myschema CASCADE;
 	
-9.	\dy		: List events
-	\df		: List functions
-	\df+ <function_name> : Show function SQL code.
-	\dT+	: List all data types
-	\dv		: List views
-	\dx		: List all extensions installed
-	\x		: Pretty-format query results instead of the not-so-useful ASCII tables
-
+9.	\dy: List events
+	\df: List functions
+	\df+ <function_name> Show function SQL code.
+	\dT+: List all data types
+	\dv: List views
+	\dx: List all extensions installed
+	\x: Pretty-format query results instead of the not-so-useful ASCII tables
 	\copy (SELECT FROM_table_name) TO 'file_path_and_name.csv' WITH CSV: Export a table as CSV
 	\copy (SELECT * FROM actor) TO 'c:\actor.csv' WITH CSV: Export a table as CSV
-
-	\des+	: List all foreign servers
-	\dE[S+]	: List all foreign tables
+	\des+: List all foreign servers
+	\dE[S+]: List all foreign tables
 
 10.	\du: List users
 	\du appreporting_user1: List a username if present.
@@ -1264,7 +1258,8 @@ Uninstall Old Versions of Docker:
 
 Docker installation on Ubuntu: 
 	sudo apt-get update
-	sudo apt install docker.io
+
+How to install Docker on Ubuntu: sudo apt install docker.io
 
 Start and automate Docker on host reboot
 
@@ -1275,19 +1270,16 @@ Start and automate Docker on host reboot
 How to check docker version
 	docker --version
 
-Step to pull Postgres image and the container. Let''s pull postgres image onto Ubuntu 
-system from docker hub.
-
+Step to pull Postgres image and the container. Let''s pull postgres image onto Ubuntu system from docker hub.
 	sudo docker pull postgres
 
 How to verify all existing Docker images.
-	
 	sudo docker images
 
 Once verified, start the Postgres instance.
 
 	sudo docker run -name postgres-docker_3e POSTGRES_PASSWORD=password -p 5433:5433 -d postgres
-	sudo docker run -name postgres-docker_2e POSTGRES_PASSWORD=password p 5434:5434 d postgres
+	sudo docker run -name postgres-docker_2e POSTGRES_PASSWORD=password -p 5434:5434 -d postgres
 
 Check Docker for the containers that are running.
 
@@ -1345,8 +1337,8 @@ cat pg_hba.conf|grep i method
 	# METHOD can be "trust", "reject", "md5", "password", "scram-sha-256",
 	# Authentication methods refer to the "Client Authentication"
 
-	Note: This is an inter-process communication mechanism that allows bidirectional data 
-	exchange between processes running on the ...
+	Note: This is an inter-process communication mechanism that allows bidirectional data exchange between processes 
+	running on the ...
 
 	Column of all pg_hba.conf
 	--------------------
@@ -1361,13 +1353,10 @@ cat pg_hba.conf|grep i method
 	# IPv6 local connections:
 	host		all				all			::1/128		 ident
 
-Column 1:Local is used by Unix-Domain socket. 
-		 If it is a host, mention the host IP address in the address column.
+Column 1:Local is used by Unix-Domain socket. If it is a host, mention the host IP address in the address column.
 Column 2: Used for the database; mention the database name.
-		If it has been set to all, then all the databases in the PostgreSQL cluster will 
-		use the same auth mechanism.
-Column 3: It is the user. It can be set to separate auth methods for different users, 
-	    and "all" means for all users.
+   If it has been set to all, then all the databases in the PostgreSQL cluster will use the same auth mechanism.
+Column 3: It is the user. It can be set to separate auth methods for different users, and "all" means for all users.
 Column 4: IP address. For example, the IP address can use a particular authentication method.
 Column 5: Which auth mode of authentication has to be used
 
@@ -1382,9 +1371,8 @@ hostnossl	DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS]
 hostgssenc	DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS]
 hostnogssenc DATABASE 	USER 	ADDRESS 	METHOD [OPTIONS] 
 
-Method can be "trust", "reject", "md5", "password", "scram-sha-256", authentication methods 
-	-> refers to the "Client Authentication"
-	
+Method can be "trust", "reject", "md5", "password", "scram-sha-256", authentication methods -- refer to the 
+"Client Authentication"
 ********************************
 
 Auth method Trust
@@ -1395,15 +1383,13 @@ Example-1
 
 # TYPE	DATABASE	USER	ADDRESS			METHOD
 
-host	all			all		127.0.0.1/32	trust   <- Any conn from localhost will go 
-												through trust auth method and will be accepted
+host	all			all		127.0.0.1/32	trust   <- Any conn from localhost will go through trust auth method and will be accepted
 
 Example-2
 
 # TYPE	DATABASE	USER	ADDRESS			METHOD
 
-host	all			all		127.0.0.1/32	reject <- Any host that is not localhost will 
-													  have the connection rejected.
+host	all			all		127.0.0.1/32	reject <- Any host that is not localhost will have the connection rejected.
 
 Testing
 	Trust Authentication
@@ -1432,20 +1418,92 @@ testing
 
 SCRAM Authentication
 --------------------
-It is one of the most secure authentication methods, using cryptographically hashed security
- mechanisms to store passwords on the system.
+It is one of the most secure authentication methods, using cryptographically hashed security mechanisms to store 
+passwords on the system.
 
 testing
 	SET password encryption = 'scram-sha-256';
 	
 	ALTER USER postgres WITH PASSWORD 'password';
 
-Modify pg_hba.conf as below
+Modify hab.conf as below
 
 host 	database 	user 	address		auth-method
 host	all			all		IP/32		<span class="s1">scram-sha-256</span>
 
 psql postgres -U postgres
+
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+Chap.14.PostgreSQL - CREATE Database 
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+	1. Using CREATE DATABASE.
+	2. Using createdb, a command-line utility
+
+Using CREATE DATABASE
+--------------------
+This command will create a database on PostgreSQL (psql).
+
+If you have appropriate privileges to create a database, by default, the new database will be created by copying the system database template 1.
+
+Syntax:
+
+The basic syntax of the CREATE DATABASE statement is as follows:
+
+	CREATE DATABASE dbname;
+
+	where dbname is the name of the database to create.
+
+Example:
+
+It creates testdb in your PostgreSQL schema.
+
+	postgres# CREATE DATABASE testdb;
+
+
+
+Using createdb Command
+--------------------
+
+The executable createdb is a utility for CREATE DATABASE.
+
+The only difference between createdb and PSO CREATE DATABASE is that the former can be run directly from the 
+command line and it allows a comment to be added to the database, all in one command.
+
+Syntax:
+
+The syntax for createdb is as shown below:
+
+	createdb [option...] [dbname [description]]
+
+The table given below lists the parameters with their descriptions.
+
+S. No. Parameter & Description
+
+	1 dbname: The name of a database to create.
+	2 description: Specifies a comment to be associated with the newly created database.
+	3 options: Command-line arguments, which createdb accepts.
+	No. Option & Description
+
+	 -D tablespace :Specifies the default tablespace for the database.
+	 -e Echo the commands that createdb generates and sends to the server.
+     -E encoding: Specifies the character encoding scheme to be used in this database
+	 
+	4 -l locale Specifies the locale to be used in this database.
+	5 -T template Specifies the template database from which to build this database.
+	6 --help Show help about createdb command line arguments, and exit.
+	7 -h host (Specifies the host name of the machine on which the server is running)
+	8 -p port (Specifies the TCP port or the local Unix domain socket file extension on which the server is listening for connections)
+	9 -U username (User name to connect as)
+   10 -w Never issue a password prompt.
+   11 -W Force created to prompt for a password before connecting to a database.
+
+	SELECT CURRENT_USER usr, 'HOST' host, inet_server_port() port;
+
+	createdb -h localhost -p 5432 -U postgres testdb
+	password******
+
+	postgres# \l
 
 
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -1520,7 +1578,7 @@ dvdrental 99+# select name, setting, unit from pg_settings where name like 'arch
 		archive_timeout			 300	<-- 5 mn																									 s
 		
 		
-Post verification let''s forcefully switch the wal logfiles;
+Post verification let''s forcefully switch the wasl logfiles;
 
 	psql
 
@@ -1537,11 +1595,11 @@ Post verification let''s forcefully switch the wal logfiles;
 
 	alter user postgres password 'password';
 
-Initiate a compressed pg_basebackup to a destination directory
+Initiate a compressed pg basebackup to a destination directory
 
 	mkdir -p /var/lib/pgsql/pg_backup
 
-	pg_basebackup -h localhost -p 5432 -U postgres -D /var/lib/pgsql/pg_backup -Ft -z -Xs -P  <- local backup
+	pg_basebackup -h localhost -p 5432 -U postgres -D /var/lib/pgsql/pg_backup -Ft -z -Xs -P  <-- local backup
 
 
 	-D,	--pgdata=DIRECTORY				receive base backup into directory
@@ -1567,7 +1625,7 @@ Connection options:
 	-W,	--no-password					Never prompt for password
 	-W,	--password						Force password prompt (should happen automatically)
 
-	$ pq_basebackup -h localhost -p 5432 -U postgres -D/var/lib/pgsql/pg_backup -Ft-z-Xo -P
+	$ pq_basebackup -h localhost -p 5432 -U postgres -D /var/lib/pgsql/pg_backup -Ft-z-Xo -P
 	915653/915653 kB (100%), 1/1 tablespace
 
 	[postgres@pg pg backup]$ ls -lrt
@@ -1584,7 +1642,7 @@ Initiate an uncompressed pg_basebackup to a destination directory
 
 	mkdir -p /var/lib/pgsql/pg_backup_uncompressed  (remove the -z option)
 
-	pg_basebackup -h localhost -p 5432 -U postgres -D /var/lib/pgsql/pg_backup_uncompressed -Ft -Xs -P
+	pg_basebackup -h localhost -p 5432 -U postgres -D/var/lib/pgsql/pg_backup_uncompressed -Ft -Xs -P
 
 Verify that the uncompressed backup has been taken
 ------------------
@@ -1605,7 +1663,7 @@ Start restoration using backup that was taken previously
 
 Since we do not have any tablespace other than the default one, continue with the below untar command.
 
-Restore backup backup
+Restore backup 
 
 	cd /var/lib/pgsql/pg_backup
 	mkdir -p /var/lib/pgsql/13/data
@@ -1655,78 +1713,6 @@ psql
 
 \l
 
-
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-Chap.14.PostgreSQL-CREATE Database 
-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-
-	1. Using CREATE DATABASE.
-	2. Using createdb, a command-line utility
-
-Using CREATE DATABASE
---------------------
-This command will create a database on PostgreSQL (psql).
-
-If you have appropriate privileges to create a database, by default, the new database will 
-be created by copying the system database template 1.
-
-Syntax:
-
-The basic syntax of the CREATE DATABASE statement is as follows:
-
-	CREATE DATABASE dbname;
-
-	where dbname is the name of the database to create.
-
-Example: To create testdb in your PostgreSQL schema.
-
-	postgres# CREATE DATABASE testdb;
-
-
-
-Using createdb Command
---------------------
-
-The executable createdb is a utility for CREATE DATABASE.
-
-The only difference between createdb and PSO CREATE DATABASE is that the former can be run 
-directly from the command line and it allows a comment to be added to the database, all in 
-one command.
-
-Syntax:
-
-The syntax for createdb is as shown below:
-
-	createdb [option...] [dbname [description]]
-
-The table given below lists the parameters with their descriptions.
-
-S. No. Parameter & Description
-
-	1 dbname: The name of a database to create.
-	2 description: Specifies a comment to be associated with the newly created database.
-	3 options: Command-line arguments, which createdb accepts.
-	No. Option & Description
-
-	 -D tablespace :Specifies the default tablespace for the database.
-	 -e Echo the commands that createdb generates and sends to the server.
-     -E encoding: Specifies the character encoding scheme to be used in this database
-	 
-	4 -l locale Specifies the locale to be used in this database.
-	5 -T template Specifies the template database from which to build this database.
-	6 --help Show help about createdb command line arguments, and exit.
-	7 -h host (Specifies the host name of the machine on which the server is running)
-	8 -p port (Specifies the TCP port or the local Unix domain socket file extension on which the server is listening for connections)
-	9 -U username (User name to connect as)
-   10 -w Never issue a password prompt.
-   11 -W Force created to prompt for a password before connecting to a database.
-
-	SELECT CURRENT_USER usr, 'HOST' host, inet_server_port() port;
-
-	createdb -h localhost -p 5432 -U postgres testdb
-	password******
-
-	postgres# \l
 
 
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -1794,7 +1780,7 @@ directory, showing a progress report while running:
 
 	$ pg_basebackup -D -Ft -X fetch | bzip2> backup.tar.bz2
 
-	$ pg_basebackup U replication_user -h 192.168.1.51 -D -Ft -X fetch | bzip2 > /postgres/backup/pgbackup/backup.tar.bz2
+	$ pg_basebackup -U replication_user -h 192.168.1.51 -D -Ft -X fetch | bzip2 > /postgres/backup/pgbackup/backup.tar.bz2
 
   (This command will fail if there are multiple tablespaces in the database.)
 
@@ -2091,7 +2077,7 @@ Options controlling the restore:
 How to create PostgreSQL dump file
 ------------------------------------
 	pg_dump database_name > database_name.sql
-	pg_dump database_name f database_name.sql
+	pg_dump database_name -f database_name.sql
 
 DEMO
 
@@ -2126,8 +2112,8 @@ Before you restore you need to connect to the database and truncate the table to
 
 	\q 
 	
-That will connect to the database, truncate the table and then disconnect again. After which you can import the data 
-into the empty table:
+That will connect to the database, truncate the table and then disconnect again. After which you can  
+import the data into the empty table:
 
 	pg_restore --data-only -h<host> -p<port> -U<username> -W -d<database> -t<table> ~/FS/<filename.dump>
 
